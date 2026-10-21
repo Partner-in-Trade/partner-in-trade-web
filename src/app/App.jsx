@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './providers/AuthContext';
 import { TradeProvider } from './providers/TradeContext';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopHeader } from '@/components/layout/TopHeader';
@@ -8,9 +9,15 @@ import { TradeLogView } from '@/features/trades/components/TradeLogView';
 import { AnalyticsView } from '@/features/analytics/AnalyticsView';
 import { TradeEntryModal } from '@/features/trades/components/TradeEntryModal';
 import { TradeDetailModal } from '@/features/trades/components/TradeDetailModal';
+import { AuthView } from '@/features/auth/AuthView';
 
-export default function App() {
+function AppShell() {
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  if (!isAuthenticated) {
+    return <AuthView />;
+  }
 
   return (
     <TradeProvider>
@@ -29,5 +36,13 @@ export default function App() {
         <TradeDetailModal />
       </div>
     </TradeProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
   );
 }

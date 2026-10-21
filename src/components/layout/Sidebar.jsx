@@ -7,8 +7,10 @@ import {
   PlusCircle,
   RotateCcw,
   TrendingUp,
+  LogOut,
 } from 'lucide-react';
 import { useTrades } from '@/app/providers/TradeContext';
+import { useAuth } from '@/app/providers/AuthContext';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -19,6 +21,7 @@ const NAV_ITEMS = [
 
 export function Sidebar({ activeTab, setActiveTab }) {
   const { openAddTradeModal, resetDemoData } = useTrades();
+  const { user, logout } = useAuth();
 
   return (
     <aside className="w-64 bg-pit-card border-r border-pit-border flex flex-col justify-between shrink-0">
@@ -28,8 +31,12 @@ export function Sidebar({ activeTab, setActiveTab }) {
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="font-bold text-sm tracking-tight text-white leading-tight block">Partner in Trade</span>
-            <span className="text-[10px] uppercase text-indigo-400 font-semibold">Journal Pro</span>
+            <span className="font-bold text-sm tracking-tight text-white leading-tight block">
+              Partner in Trade
+            </span>
+            <span className="text-[10px] uppercase text-indigo-400 font-semibold">
+              Journal Pro
+            </span>
           </div>
         </div>
 
@@ -65,13 +72,35 @@ export function Sidebar({ activeTab, setActiveTab }) {
         </nav>
       </div>
 
-      <div className="p-4 border-t border-pit-border">
+      <div className="p-4 border-t border-pit-border space-y-3">
+        {user && (
+          <div className="p-2.5 rounded-lg bg-pit-bg border border-pit-border flex items-center justify-between">
+            <div className="truncate pr-2">
+              <div className="text-xs font-semibold text-white truncate">
+                {user.fullName}
+              </div>
+              <div className="text-[11px] text-slate-400 truncate">{user.email}</div>
+            </div>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-pit-profit shrink-0">
+              {user.accountType}
+            </span>
+          </div>
+        )}
+
         <button
           onClick={resetDemoData}
           className="w-full py-2 px-3 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs text-slate-300 flex items-center justify-center gap-2 transition"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Reset Sample Trades
+        </button>
+
+        <button
+          onClick={logout}
+          className="w-full py-2 px-3 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs text-pit-loss font-medium flex items-center justify-center gap-2 transition"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          Sign Out
         </button>
       </div>
     </aside>
