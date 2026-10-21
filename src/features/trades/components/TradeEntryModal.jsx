@@ -126,10 +126,14 @@ export function TradeEntryModal() {
 
   const set = (patch) => setForm((prev) => ({ ...prev, ...patch }));
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    addTrade(formToTradePayload(form));
-    setIsAddModalOpen(false);
+    try {
+      await addTrade(formToTradePayload(form));
+      setIsAddModalOpen(false);
+    } catch (err) {
+      setToast(err.response?.data?.message || err.message || 'Failed to save trade');
+    }
   };
 
   const pnlReady = canCalculateNetPnl(formToTradePayload(form));

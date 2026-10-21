@@ -14,20 +14,30 @@ import { LOGO_ALT, LOGO_SRC } from '@/constants/branding';
 import { GoogleIcon } from '@/components/ui/GoogleIcon';
 
 export function AuthView() {
-  const { login, register, bypassAuth, loginWithGoogle } = useAuth();
+  const {
+    login,
+    register,
+    bypassAuth,
+    loginWithGoogle,
+    authError,
+    authLoading,
+    isDevBypassEnabled,
+    clearAuthError,
+  } = useAuth();
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({
     fullName: '',
-    email: 'trader@partnerintrade.com',
-    password: '••••••••••••',
+    email: '',
+    password: '',
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    clearAuthError();
     if (mode === 'login') {
-      login({ email: form.email, password: form.password });
+      await login({ email: form.email, password: form.password });
     } else {
-      register({
+      await register({
         fullName: form.fullName,
         email: form.email,
         password: form.password,
@@ -122,39 +132,47 @@ export function AuthView() {
           </div>
 
           <div className="bg-pit-card border border-pit-border rounded-2xl p-8 shadow-2xl space-y-5">
-            <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between gap-3">
-              <div className="text-xs text-indigo-200">
-                <span className="font-semibold block text-indigo-300">
-                  UI Preview Mode Active
-                </span>
-                Backend auth is currently bypassed.
-              </div>
-              <button
-                type="button"
-                onClick={bypassAuth}
-                className="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition"
-              >
-                <Zap className="w-3.5 h-3.5" />
-                Bypass Now
-              </button>
-            </div>
+            {isDevBypassEnabled && (
+              <>
+                <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between gap-3">
+                  <div className="text-xs text-indigo-200">
+                    <span className="font-semibold block text-indigo-300">Dev only</span>
+                    Mock login without API (no live data).
+                  </div>
+                  <button
+                    type="button"
+                    onClick={bypassAuth}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    Bypass
+                  </button>
+                </div>
 
-            <button
-              type="button"
-              onClick={loginWithGoogle}
-              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-sm flex items-center justify-center gap-3 border border-slate-200/20 shadow-sm transition"
-            >
-              <GoogleIcon className="h-5 w-5 shrink-0" />
-              Continue with Google
-            </button>
+                <button
+                  type="button"
+                  onClick={loginWithGoogle}
+                  className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-sm flex items-center justify-center gap-3 border border-slate-200/20 shadow-sm transition"
+                >
+                  <GoogleIcon className="h-5 w-5 shrink-0" />
+                  Continue with Google (dev)
+                </button>
 
-            <div className="relative flex items-center py-1">
-              <div className="flex-grow border-t border-pit-border" />
-              <span className="mx-3 text-[11px] uppercase tracking-wide text-slate-500">
-                or email
-              </span>
-              <div className="flex-grow border-t border-pit-border" />
-            </div>
+                <div className="relative flex items-center py-1">
+                  <div className="flex-grow border-t border-pit-border" />
+                  <span className="mx-3 text-[11px] uppercase tracking-wide text-slate-500">
+                    or email
+                  </span>
+                  <div className="flex-grow border-t border-pit-border" />
+                </div>
+              </>
+            )}
+
+            {authError && (
+              <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg px-3 py-2">
+                {authError}
+              </p>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
@@ -192,13 +210,13 @@ export function AuthView() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs text-slate-400">Password</label>
-                  {mode === 'login' && (
+                  {mode === 'login' && isDevBypassEnabled && (
                     <button
                       type="button"
                       onClick={bypassAuth}
                       className="text-xs text-indigo-400 hover:text-indigo-300"
                     >
-                      Forgot password?
+                      Dev bypass
                     </button>
                   )}
                 </div>
@@ -217,9 +235,14 @@ export function AuthView() {
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
+                disabled={authLoading}
+                className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
               >
-                {mode === 'login' ? 'Sign In to Dashboard' : 'Create Partner in Trade Account'}
+                {authLoading
+                  ? 'Please wait…'
+                  : mode === 'login'
+                    ? 'Sign In to Dashboard'
+                    : 'Create Partner in Trade Account'}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>

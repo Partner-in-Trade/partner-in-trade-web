@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Search, Trash2 } from 'lucide-react';
 import { useTrades } from '@/app/providers/TradeContext';
 import { OutcomeBadge } from '@/components/ui/OutcomeBadge';
+import { Toast } from '@/components/ui/Toast';
 
 export function TradeLogView() {
   const { trades, deleteTrade, setSelectedTrade } = useTrades();
   const [search, setSearch] = useState('');
+  const [toast, setToast] = useState('');
   const filtered = trades.filter((t) => t.symbol.toLowerCase().includes(search.toLowerCase()));
 
   return (
@@ -28,12 +30,13 @@ export function TradeLogView() {
                 <td className="py-3 px-4 text-right font-mono text-xs">{t.rMultiple}R</td>
                 <td className={`py-3 px-4 text-right font-mono font-semibold ${t.netPnl >= 0 ? 'text-pit-profit' : 'text-pit-loss'}`}>${t.netPnl.toFixed(2)}</td>
                 <td className="py-3 px-4 text-center"><OutcomeBadge outcome={t.outcome} /></td>
-                <td className="py-3 px-4 text-center" onClick={(e) => { e.stopPropagation(); deleteTrade(t.id); }}><button className="p-1 hover:text-pit-loss text-slate-400"><Trash2 className="w-4 h-4" /></button></td>
+                <td className="py-3 px-4 text-center" onClick={(e) => { e.stopPropagation(); deleteTrade(t.id).catch((err) => setToast(err.message || 'Delete failed')); }}><button className="p-1 hover:text-pit-loss text-slate-400"><Trash2 className="w-4 h-4" /></button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <Toast message={toast} onDismiss={() => setToast('')} />
     </div>
   );
 }
