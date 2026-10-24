@@ -6,6 +6,7 @@ import authReducer from '@/app/store/slices/authSlice';
 import workspaceReducer from '@/app/store/slices/workspaceSlice';
 import tradesReducer from '@/app/store/slices/tradesSlice';
 import uiReducer from '@/app/store/slices/uiSlice';
+import newsReducer from '@/app/store/slices/newsSlice';
 
 export function createTestStore(preloadedState) {
   return configureStore({
@@ -14,6 +15,7 @@ export function createTestStore(preloadedState) {
       workspace: workspaceReducer,
       trades: tradesReducer,
       ui: uiReducer,
+      news: newsReducer,
     },
     preloadedState,
   });

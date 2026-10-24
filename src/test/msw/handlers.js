@@ -1,5 +1,11 @@
 import { http, HttpResponse } from 'msw';
-import { loginSuccessResponse, mockApiTrade, mockMarkets, strategiesListResponse } from '../fixtures';
+import {
+  loginSuccessResponse,
+  mockApiTrade,
+  mockMarkets,
+  mockEconomicEvents,
+  strategiesListResponse,
+} from '../fixtures';
 
 export const API_BASE = 'http://localhost:8080/api/v1';
 
@@ -54,4 +60,6 @@ export const handlers = [
   }),
 
   http.delete(`${API_BASE}/trades/:tradeId`, () => HttpResponse.json({ success: true })),
+
+  http.get(`${API_BASE}/news/this-week`, () => HttpResponse.json(mockEconomicEvents)),
 ];
