@@ -4,6 +4,7 @@ import {
   Calendar as CalendarIcon,
   Table2,
   BarChart3,
+  Wallet,
   PlusCircle,
   RotateCcw,
   TrendingUp,
@@ -11,17 +12,20 @@ import {
 } from 'lucide-react';
 import { useTrades } from '@/app/providers/TradeContext';
 import { useAuth } from '@/app/providers/AuthContext';
+import { useWorkspace } from '@/app/providers/WorkspaceContext';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'calendar', label: 'P&L Calendar', icon: CalendarIcon },
   { id: 'tradelog', label: 'Trade Log', icon: Table2 },
   { id: 'analytics', label: 'Playbooks & Edge', icon: BarChart3 },
+  { id: 'markets', label: 'Markets', icon: Wallet },
 ];
 
 export function Sidebar({ activeTab, setActiveTab }) {
-  const { openAddTradeModal, resetDemoData } = useTrades();
-  const { user, logout } = useAuth();
+  const { openAddTradeModal, refreshTrades, loading } = useTrades();
+  const { selectedMarket } = useWorkspace();
+  const { user, logout, isDevBypassEnabled } = useAuth();
 
   return (
     <aside className="w-64 bg-pit-card border-r border-pit-border flex flex-col justify-between shrink-0">
@@ -35,15 +39,17 @@ export function Sidebar({ activeTab, setActiveTab }) {
               Partner in Trade
             </span>
             <span className="text-[10px] uppercase text-indigo-400 font-semibold">
-              Journal Pro
+              {selectedMarket?.name || 'No market'}
             </span>
           </div>
         </div>
 
         <div className="p-4">
           <button
+            type="button"
+            disabled={loading || !selectedMarket}
             onClick={() => openAddTradeModal()}
-            className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
+            className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
           >
             <PlusCircle className="w-4 h-4" />
             Log Manual Trade
@@ -88,14 +94,20 @@ export function Sidebar({ activeTab, setActiveTab }) {
         )}
 
         <button
-          onClick={resetDemoData}
+          type="button"
+          onClick={() => refreshTrades()}
           className="w-full py-2 px-3 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs text-slate-300 flex items-center justify-center gap-2 transition"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          Reset Sample Trades
+          Refresh trades
         </button>
 
+        {isDevBypassEnabled && (
+          <p className="text-[10px] text-slate-500 text-center">Dev mock login skips API</p>
+        )}
+
         <button
+          type="button"
           onClick={logout}
           className="w-full py-2 px-3 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs text-pit-loss font-medium flex items-center justify-center gap-2 transition"
         >

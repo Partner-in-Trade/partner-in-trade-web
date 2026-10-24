@@ -1,59 +1,109 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { authApi } from '@/features/auth/api/authApi';
+import {
+  mapLoginResponse,
+  persistAuthSession,
+  clearAuthSession,
+  AUTH_STORAGE_KEY,
+} from '@/lib/mappers/authMapper';
+import { setOnUnauthorized } from '@/lib/apiClient';
 
 const AuthContext = createContext(null);
-const AUTH_STORAGE_KEY = 'pit_auth_user_v1';
-const JWT_STORAGE_KEY = 'pit_jwt';
+
+const isDev = import.meta.env.DEV;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
+      const token = localStorage.getItem('pit_jwt');
       const saved = localStorage.getItem(AUTH_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : null;
+      if (!saved || !token) return null;
+      return JSON.parse(saved);
     } catch {
       return null;
     }
   });
+  const [authError, setAuthError] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    clearAuthSession();
+    setAuthError(null);
+  }, []);
+
+  useEffect(() => {
+    setOnUnauthorized(() => logout());
+    return () => setOnUnauthorized(null);
+  }, [logout]);
 
   useEffect(() => {
     try {
       if (user) {
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
       } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        localStorage.removeItem(JWT_STORAGE_KEY);
+        clearAuthSession();
       }
     } catch (e) {
       console.error('Failed to persist auth state:', e);
     }
   }, [user]);
 
-  // Temporary bypass login (accepts any email/password and navigates to Dashboard)
-  const login = async ({ email }) => {
-    const mockUser = {
-      id: 'usr-pit-01',
-      fullName: email ? email.split('@')[0] : 'Pro Trader',
-      email: email || 'trader@partnerintrade.com',
-      accountType: 'LIVE PRO',
-      baseCurrency: 'USD',
-    };
-    localStorage.setItem(JWT_STORAGE_KEY, 'mock-jwt-token-bypass');
-    setUser(mockUser);
+  const applyLoginResult = (result) => {
+    if (result.error) {
+      setAuthError(result.error);
+      return false;
+    }
+    persistAuthSession(result.user, result.token);
+    setUser(result.user);
+    setAuthError(null);
+    return true;
   };
 
-  // Temporary bypass registration
-  const register = async ({ fullName, email }) => {
-    const mockUser = {
-      id: `usr-${Date.now()}`,
-      fullName: fullName || 'Pro Trader',
-      email: email || 'trader@partnerintrade.com',
-      accountType: 'LIVE PRO',
-      baseCurrency: 'USD',
-    };
-    localStorage.setItem(JWT_STORAGE_KEY, 'mock-jwt-token-bypass');
-    setUser(mockUser);
+  const login = async ({ email, password }) => {
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const response = await authApi.login({ email, password });
+      return applyLoginResult(mapLoginResponse(response));
+    } catch (e) {
+      const data = e.response?.data;
+      if (data && data.success === false && data.message) {
+        setAuthError(data.message);
+      } else {
+        setAuthError(data?.message || 'Invalid email or password');
+      }
+      return false;
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const register = async ({ fullName, email, password }) => {
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const response = await authApi.register({
+        name: fullName,
+        email,
+        password,
+      });
+      return applyLoginResult(mapLoginResponse(response));
+    } catch (e) {
+      const data = e.response?.data;
+      if (data && data.success === false && data.message) {
+        setAuthError(data.message);
+      } else {
+        setAuthError(data?.message || 'Registration failed');
+      }
+      return false;
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const loginWithGoogle = async () => {
+    if (!isDev) return;
     const mockUser = {
       id: 'usr-google-01',
       fullName: 'Google User',
@@ -62,12 +112,12 @@ export function AuthProvider({ children }) {
       baseCurrency: 'USD',
       authProvider: 'google',
     };
-    localStorage.setItem(JWT_STORAGE_KEY, 'mock-jwt-google-bypass');
+    localStorage.setItem('pit_jwt', 'mock-jwt-google-bypass');
     setUser(mockUser);
   };
 
-  // One-click instant bypass button handler
   const bypassAuth = () => {
+    if (!isDev) return;
     const demoUser = {
       id: 'usr-demo-01',
       fullName: 'Alex Mercer',
@@ -75,12 +125,8 @@ export function AuthProvider({ children }) {
       accountType: 'FUNDED 100K',
       baseCurrency: 'USD',
     };
-    localStorage.setItem(JWT_STORAGE_KEY, 'mock-jwt-token-bypass');
+    localStorage.setItem('pit_jwt', 'mock-jwt-token-bypass');
     setUser(demoUser);
-  };
-
-  const logout = () => {
-    setUser(null);
   };
 
   return (
@@ -93,6 +139,10 @@ export function AuthProvider({ children }) {
         loginWithGoogle,
         bypassAuth,
         logout,
+        authError,
+        authLoading,
+        clearAuthError: () => setAuthError(null),
+        isDevBypassEnabled: isDev,
       }}
     >
       {children}
@@ -105,3 +155,6 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
   return ctx;
 }
+
+
+

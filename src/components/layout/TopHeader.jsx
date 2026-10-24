@@ -9,6 +9,7 @@ export function TopHeader({ activeTab }) {
     calendar: 'Monthly P&L Calendar',
     tradelog: 'Manual Trade Execution Log',
     analytics: 'Playbooks, Edge & Mistake Analytics',
+    markets: 'Markets & Capital',
   };
 
   return (

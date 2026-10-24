@@ -74,17 +74,17 @@ src/
 
 ## Data & environment
 
-- Trades persist under the key `partner_in_trade_trades_v1` in `localStorage`.
-- Use **Reset Sample Trades** in the sidebar to reload demo data from `mockTrades.js`.
+Trades and account data come from the **Partner In Trade** backend API after login. Auth token is stored in `localStorage` (`pit_jwt`).
 
-Optional API configuration (copy `.env.example` to `.env`):
+1. Start the backend (`partner-in-trade-backend`: `./run-local.sh` on port **8080**).
+2. Copy `.env.example` → `.env` in this folder (optional; default is `http://localhost:8080/api/v1`).
+3. Run `npm run dev` (port **3000**). Vite proxies `/api` to the backend in dev.
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_API_BASE_URL` | Backend origin (e.g. `http://localhost:8080`) |
-| `VITE_USE_MOCK_DATA` | Set to `false` when wiring a live API |
+| `VITE_API_BASE_URL` | API base including `/api/v1` |
 
-See **[BACKEND_AND_DATABASE_SPEC.md](./BACKEND_AND_DATABASE_SPEC.md)** for REST shapes and a suggested PostgreSQL schema.
+Integration details: **[../docs/integration/INTEGRATION_PLAN.md](../docs/integration/INTEGRATION_PLAN.md)**.
 
 ## License
 
