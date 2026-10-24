@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   LayoutDashboard,
   Calendar as CalendarIcon,
@@ -10,9 +11,15 @@ import {
   TrendingUp,
   LogOut,
 } from 'lucide-react';
-import { useTrades } from '@/app/providers/TradeContext';
-import { useAuth } from '@/app/providers/AuthContext';
-import { useWorkspace } from '@/app/providers/WorkspaceContext';
+import {
+  openAddTradeModal,
+  refreshTrades,
+  logout,
+  selectUser,
+  selectIsDevBypassEnabled,
+  selectSelectedMarket,
+  selectJournalLoading,
+} from '@/app/store';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -23,9 +30,11 @@ const NAV_ITEMS = [
 ];
 
 export function Sidebar({ activeTab, setActiveTab }) {
-  const { openAddTradeModal, refreshTrades, loading } = useTrades();
-  const { selectedMarket } = useWorkspace();
-  const { user, logout, isDevBypassEnabled } = useAuth();
+  const dispatch = useDispatch();
+  const loading = useSelector(selectJournalLoading);
+  const selectedMarket = useSelector(selectSelectedMarket);
+  const user = useSelector(selectUser);
+  const isDevBypassEnabled = selectIsDevBypassEnabled();
 
   return (
     <aside className="w-64 bg-pit-card border-r border-pit-border flex flex-col justify-between shrink-0">
@@ -48,7 +57,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
           <button
             type="button"
             disabled={loading || !selectedMarket}
-            onClick={() => openAddTradeModal()}
+            onClick={() => dispatch(openAddTradeModal())}
             className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
           >
             <PlusCircle className="w-4 h-4" />
@@ -95,7 +104,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
 
         <button
           type="button"
-          onClick={() => refreshTrades()}
+          onClick={() => dispatch(refreshTrades())}
           className="w-full py-2 px-3 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs text-slate-300 flex items-center justify-center gap-2 transition"
         >
           <RotateCcw className="w-3.5 h-3.5" />
@@ -108,7 +117,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
 
         <button
           type="button"
-          onClick={logout}
+          onClick={() => dispatch(logout())}
           className="w-full py-2 px-3 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs text-pit-loss font-medium flex items-center justify-center gap-2 transition"
         >
           <LogOut className="w-3.5 h-3.5" />

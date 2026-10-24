@@ -1,8 +1,9 @@
 import React from 'react';
-import { useTrades } from '@/app/providers/TradeContext';
+import { useSelector } from 'react-redux';
+import { selectMetrics } from '@/app/store';
 
 export function TopHeader({ activeTab }) {
-  const { metrics } = useTrades();
+  const metrics = useSelector(selectMetrics);
 
   const titles = {
     dashboard: 'Performance Overview',

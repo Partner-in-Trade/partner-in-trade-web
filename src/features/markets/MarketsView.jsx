@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { useWorkspace } from '@/app/providers/WorkspaceContext';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  setSelectedMarketId,
+  createAndActivateMarket,
+  addFundsToMarket,
+  selectMarkets,
+  selectSelectedMarketId,
+  selectWorkspaceLoading,
+} from '@/app/store';
 import { MARKET_NAME_PRESETS } from '@/constants/markets';
 import { CURRENCIES } from '@/data/mockTrades';
 import { Toast } from '@/components/ui/Toast';
@@ -18,14 +26,10 @@ function inputClass(extra = '') {
 }
 
 export function MarketsView() {
-  const {
-    markets,
-    selectedMarketId,
-    setSelectedMarketId,
-    createAndActivateMarket,
-    addFundsToMarket,
-    workspaceLoading,
-  } = useWorkspace();
+  const dispatch = useDispatch();
+  const markets = useSelector(selectMarkets);
+  const selectedMarketId = useSelector(selectSelectedMarketId);
+  const workspaceLoading = useSelector(selectWorkspaceLoading);
 
   const [preset, setPreset] = useState(MARKET_NAME_PRESETS[0]);
   const [name, setName] = useState(MARKET_NAME_PRESETS[0]);
@@ -55,7 +59,9 @@ export function MarketsView() {
     }
     setSubmitting(true);
     try {
-      await createAndActivateMarket({ name: trimmed, funds: amount, currency });
+      await dispatch(
+        createAndActivateMarket({ name: trimmed, funds: amount, currency })
+      ).unwrap();
       setFunds('');
       setToast('Market created and funded.');
     } catch (err) {
@@ -77,7 +83,7 @@ export function MarketsView() {
       return;
     }
     try {
-      await addFundsToMarket(marketId, amount);
+      await dispatch(addFundsToMarket({ marketId, funds: amount })).unwrap();
       setAddFundsFor(null);
       setAddFundsAmount('');
       setToast('Funds added.');
@@ -213,7 +219,7 @@ export function MarketsView() {
                     <td className="py-3 px-4 text-center space-x-2">
                       <button
                         type="button"
-                        onClick={() => setSelectedMarketId(m.id)}
+                        onClick={() => dispatch(setSelectedMarketId(m.id))}
                         className={`text-xs px-2 py-1 rounded ${
                           isSelected
                             ? 'bg-indigo-600 text-white'

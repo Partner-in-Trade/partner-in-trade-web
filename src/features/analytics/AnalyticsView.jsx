@@ -1,9 +1,10 @@
 import React from 'react';
-import { useTrades } from '@/app/providers/TradeContext';
+import { useSelector } from 'react-redux';
+import { selectEnrichedTrades } from '@/app/store';
 import { PlaybookBreakdownTable } from './components/PlaybookBreakdownTable';
 
 export function AnalyticsView() {
-  const { trades } = useTrades();
+  const trades = useSelector(selectEnrichedTrades);
 
   return (
     <div className="space-y-6">
