@@ -10,6 +10,7 @@ import {
   RotateCcw,
   TrendingUp,
   LogOut,
+  Newspaper,
 } from 'lucide-react';
 import {
   openAddTradeModal,
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { id: 'tradelog', label: 'Trade Log', icon: Table2 },
   { id: 'analytics', label: 'Playbooks & Edge', icon: BarChart3 },
   { id: 'markets', label: 'Markets', icon: Wallet },
+  { id: 'news-calendar', label: 'News Calendar', icon: Newspaper },
 ];
 
 export function Sidebar({ activeTab, setActiveTab }) {

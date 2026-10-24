@@ -15,6 +15,7 @@ import { CalendarView } from '@/features/calendar/CalendarView';
 import { TradeLogView } from '@/features/trades/components/TradeLogView';
 import { AnalyticsView } from '@/features/analytics/AnalyticsView';
 import { MarketsView } from '@/features/markets/MarketsView';
+import { NewsCalendarView } from '@/features/news/NewsCalendarView';
 import { TradeEntryModal } from '@/features/trades/components/TradeEntryModal';
 import { TradeDetailModal } from '@/features/trades/components/TradeDetailModal';
 import { AuthView } from '@/features/auth/AuthView';
@@ -22,7 +23,8 @@ import { AuthView } from '@/features/auth/AuthView';
 export function MainContent({ activeTab, onNavigate }) {
   const loading = useSelector(selectJournalLoading);
   const error = useSelector(selectJournalError);
-  const showJournalLoading = loading && activeTab !== 'markets';
+  const journalIndependentTab = activeTab === 'markets' || activeTab === 'news-calendar';
+  const showJournalLoading = loading && !journalIndependentTab;
 
   if (showJournalLoading) {
     return (
@@ -32,7 +34,7 @@ export function MainContent({ activeTab, onNavigate }) {
     );
   }
 
-  if (error && activeTab !== 'markets') {
+  if (error && !journalIndependentTab) {
     return (
       <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-6 text-sm text-rose-200">
         {error}
@@ -47,6 +49,7 @@ export function MainContent({ activeTab, onNavigate }) {
       {activeTab === 'tradelog' && <TradeLogView />}
       {activeTab === 'analytics' && <AnalyticsView />}
       {activeTab === 'markets' && <MarketsView />}
+      {activeTab === 'news-calendar' && <NewsCalendarView />}
     </>
   );
 }

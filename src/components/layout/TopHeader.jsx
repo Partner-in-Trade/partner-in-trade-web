@@ -11,6 +11,7 @@ export function TopHeader({ activeTab }) {
     tradelog: 'Manual Trade Execution Log',
     analytics: 'Playbooks, Edge & Mistake Analytics',
     markets: 'Markets & Capital',
+    'news-calendar': 'Economic News Calendar',
   };
 
   return (

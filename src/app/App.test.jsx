@@ -60,6 +60,66 @@ describe('MainContent', () => {
     expect(screen.getByText(/Loading your journal/)).toBeInTheDocument();
   });
 
+  it('skips journal loading on news calendar tab', () => {
+    renderWithProviders(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
+      preloadedState: {
+        workspace: {
+          markets: [],
+          selectedMarketId: null,
+          strategiesByName: {},
+          workspaceLoading: true,
+          workspaceError: null,
+        },
+        trades: {
+          rawTrades: [],
+          tradesLoading: false,
+          tradesError: null,
+          isAddModalOpen: false,
+          prefillDate: null,
+          selectedTrade: null,
+        },
+        news: {
+          events: [],
+          loading: false,
+          error: null,
+          fetchedAt: 1,
+        },
+      },
+    });
+    expect(screen.queryByText(/Loading your journal/)).not.toBeInTheDocument();
+    expect(screen.getByText(/This week's economic events/i)).toBeInTheDocument();
+  });
+
+  it('skips journal error on news calendar tab', () => {
+    renderWithProviders(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
+      preloadedState: {
+        workspace: {
+          markets: [],
+          selectedMarketId: null,
+          strategiesByName: {},
+          workspaceLoading: false,
+          workspaceError: 'Bootstrap failed',
+        },
+        trades: {
+          rawTrades: [],
+          tradesLoading: false,
+          tradesError: null,
+          isAddModalOpen: false,
+          prefillDate: null,
+          selectedTrade: null,
+        },
+        news: {
+          events: [],
+          loading: false,
+          error: null,
+          fetchedAt: 1,
+        },
+      },
+    });
+    expect(screen.queryByText('Bootstrap failed')).not.toBeInTheDocument();
+    expect(screen.getByText(/This week's economic events/i)).toBeInTheDocument();
+  });
+
   it('shows journal error outside markets tab', () => {
     renderWithProviders(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
       preloadedState: {

@@ -25,6 +25,25 @@ describe('Sidebar', () => {
     expect(onTab).toHaveBeenCalledWith('markets');
   });
 
+  it('navigates to news calendar tab', async () => {
+    const user = userEvent.setup();
+    const onTab = vi.fn();
+    renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={onTab} />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        workspace: {
+          markets: [{ id: 10, name: 'Forex' }],
+          selectedMarketId: 10,
+          strategiesByName: {},
+          workspaceLoading: false,
+          workspaceError: null,
+        },
+      },
+    });
+    await user.click(screen.getByRole('button', { name: /News Calendar/i }));
+    expect(onTab).toHaveBeenCalledWith('news-calendar');
+  });
+
   it('disables log trade without selected market', () => {
     renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={() => {}} />, {
       preloadedState: {
