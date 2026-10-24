@@ -4,6 +4,7 @@ import {
   Calendar as CalendarIcon,
   Table2,
   BarChart3,
+  Wallet,
   PlusCircle,
   RotateCcw,
   TrendingUp,
@@ -11,16 +12,19 @@ import {
 } from 'lucide-react';
 import { useTrades } from '@/app/providers/TradeContext';
 import { useAuth } from '@/app/providers/AuthContext';
+import { useWorkspace } from '@/app/providers/WorkspaceContext';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'calendar', label: 'P&L Calendar', icon: CalendarIcon },
   { id: 'tradelog', label: 'Trade Log', icon: Table2 },
   { id: 'analytics', label: 'Playbooks & Edge', icon: BarChart3 },
+  { id: 'markets', label: 'Markets', icon: Wallet },
 ];
 
 export function Sidebar({ activeTab, setActiveTab }) {
-  const { openAddTradeModal, refreshTrades, market, loading } = useTrades();
+  const { openAddTradeModal, refreshTrades, loading } = useTrades();
+  const { selectedMarket } = useWorkspace();
   const { user, logout, isDevBypassEnabled } = useAuth();
 
   return (
@@ -35,7 +39,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
               Partner in Trade
             </span>
             <span className="text-[10px] uppercase text-indigo-400 font-semibold">
-              {market?.name || 'Journal Pro'}
+              {selectedMarket?.name || 'No market'}
             </span>
           </div>
         </div>
@@ -43,7 +47,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
         <div className="p-4">
           <button
             type="button"
-            disabled={loading || !market}
+            disabled={loading || !selectedMarket}
             onClick={() => openAddTradeModal()}
             className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
           >

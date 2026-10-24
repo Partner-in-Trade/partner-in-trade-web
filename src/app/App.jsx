@@ -8,14 +8,16 @@ import { DashboardView } from '@/features/dashboard/DashboardView';
 import { CalendarView } from '@/features/calendar/CalendarView';
 import { TradeLogView } from '@/features/trades/components/TradeLogView';
 import { AnalyticsView } from '@/features/analytics/AnalyticsView';
+import { MarketsView } from '@/features/markets/MarketsView';
 import { TradeEntryModal } from '@/features/trades/components/TradeEntryModal';
 import { TradeDetailModal } from '@/features/trades/components/TradeDetailModal';
 import { AuthView } from '@/features/auth/AuthView';
 
-function MainContent({ activeTab }) {
+function MainContent({ activeTab, setActiveTab }) {
   const { loading, error } = useTrades();
+  const showJournalLoading = loading && activeTab !== 'markets';
 
-  if (loading) {
+  if (showJournalLoading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh] text-slate-400 text-sm">
         Loading your journal…
@@ -23,7 +25,7 @@ function MainContent({ activeTab }) {
     );
   }
 
-  if (error) {
+  if (error && activeTab !== 'markets') {
     return (
       <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-6 text-sm text-rose-200">
         {error}
@@ -33,10 +35,11 @@ function MainContent({ activeTab }) {
 
   return (
     <>
-      {activeTab === 'dashboard' && <DashboardView />}
+      {activeTab === 'dashboard' && <DashboardView onNavigate={setActiveTab} />}
       {activeTab === 'calendar' && <CalendarView />}
       {activeTab === 'tradelog' && <TradeLogView />}
       {activeTab === 'analytics' && <AnalyticsView />}
+      {activeTab === 'markets' && <MarketsView />}
     </>
   );
 }
@@ -57,7 +60,7 @@ function AppShell() {
           <div className="flex-1 flex flex-col min-w-0">
             <TopHeader activeTab={activeTab} />
             <main className="flex-1 p-6 overflow-y-auto">
-              <MainContent activeTab={activeTab} />
+              <MainContent activeTab={activeTab} setActiveTab={setActiveTab} />
             </main>
           </div>
           <TradeEntryModal />

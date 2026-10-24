@@ -1,25 +1,15 @@
 import { PLAYBOOK_SETUPS } from '@/data/mockTrades';
-import { marketsApi } from '@/features/markets/api/marketsApi';
 import { strategiesApi } from '@/features/strategies/api/strategiesApi';
 
-const DEFAULT_MARKET_NAME = 'Primary';
 const STRATEGY_TYPE = 'Playbook';
 const STRATEGY_TIMEFRAME = '5m';
 
 /**
- * Ensures user has at least one market and playbook strategies.
+ * Seeds playbook strategies for the user if missing.
  * @param {number} userId
- * @returns {Promise<{ market: Object, strategiesByName: Record<string, number> }>}
+ * @returns {Promise<Record<string, number>>}
  */
-export async function ensureUserWorkspace(userId) {
-  const marketsRes = await marketsApi.getMarkets(userId);
-  let markets = marketsRes.data || [];
-  if (!markets.length) {
-    const created = await marketsApi.createMarket(DEFAULT_MARKET_NAME, userId);
-    markets = [created.data];
-  }
-  const market = markets[0];
-
+export async function ensureStrategies(userId) {
   const stratRes = await strategiesApi.getByUser(userId, 0, 100);
   const existing = stratRes.data?.strategies || [];
   const strategiesByName = {};
@@ -40,5 +30,5 @@ export async function ensureUserWorkspace(userId) {
     strategiesByName[created.data.name] = created.data.id;
   }
 
-  return { market, strategiesByName };
+  return strategiesByName;
 }

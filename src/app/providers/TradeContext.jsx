@@ -13,7 +13,8 @@ const TradeContext = createContext(null);
 
 export function TradeProvider({ children }) {
   const { user } = useAuth();
-  const { market, strategiesByName, workspaceLoading, workspaceError } = useWorkspace();
+  const { selectedMarket, strategiesByName, workspaceLoading, workspaceError } = useWorkspace();
+  const market = selectedMarket;
 
   const [rawTrades, setRawTrades] = useState([]);
   const [tradesLoading, setTradesLoading] = useState(false);
@@ -44,7 +45,7 @@ export function TradeProvider({ children }) {
   }, [market?.id]);
 
   useEffect(() => {
-    if (market?.id && !workspaceLoading) {
+    if (!workspaceLoading) {
       fetchTrades();
     }
   }, [market?.id, workspaceLoading, fetchTrades]);
