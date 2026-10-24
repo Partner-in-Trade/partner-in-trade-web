@@ -1,9 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { useTrades } from '@/app/providers/TradeContext';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  openAddTradeModal,
+  setSelectedTrade,
+  selectEnrichedTrades,
+} from '@/app/store';
 
 export function CalendarView() {
-  const { trades, openAddTradeModal, setSelectedTrade } = useTrades();
+  const dispatch = useDispatch();
+  const trades = useSelector(selectEnrichedTrades);
   const [currentMonth, setCurrentMonth] = useState(() => new Date(2025, 4, 1));
 
   const year = currentMonth.getFullYear();
@@ -50,7 +56,7 @@ export function CalendarView() {
             const hasTrades = Boolean(summary);
             const isGreen = hasTrades && summary.netPnl >= 0;
             return (
-              <div key={dateStr} onClick={() => hasTrades ? setSelectedTrade(summary.items[0]) : openAddTradeModal(dateStr)} className={`h-28 rounded-lg p-2.5 border transition cursor-pointer flex flex-col justify-between ${!hasTrades ? 'bg-pit-bg/80 border-pit-border' : isGreen ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
+              <div key={dateStr} onClick={() => hasTrades ? dispatch(setSelectedTrade(summary.items[0])) : dispatch(openAddTradeModal(dateStr))} className={`h-28 rounded-lg p-2.5 border transition cursor-pointer flex flex-col justify-between ${!hasTrades ? 'bg-pit-bg/80 border-pit-border' : isGreen ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
                 <div className="flex items-center justify-between"><span className="text-xs font-mono text-slate-400">{day}</span><Plus className="w-3 h-3 text-slate-400" /></div>
                 {hasTrades && (
                   <div className="text-right">

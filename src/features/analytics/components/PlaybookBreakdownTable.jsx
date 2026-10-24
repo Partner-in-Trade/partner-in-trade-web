@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { useTrades } from '@/app/providers/TradeContext';
+import { useSelector } from 'react-redux';
+import { selectEnrichedTrades } from '@/app/store';
 
 export function PlaybookBreakdownTable() {
-  const { trades } = useTrades();
+  const trades = useSelector(selectEnrichedTrades);
 
   const setupStats = useMemo(() => {
     const map = {};

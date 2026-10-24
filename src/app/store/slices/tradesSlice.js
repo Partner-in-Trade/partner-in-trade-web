@@ -1,0 +1,134 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { tradesApi } from '@/features/trades/api/tradesApi';
+import {
+  apiTradeToUi,
+  uiTradeToApi,
+  resolveStrategyId,
+} from '@/lib/mappers/tradeMapper';
+import { logout } from './authSlice';
+
+const initialTradesState = {
+  rawTrades: [],
+  tradesLoading: false,
+  tradesError: null,
+  isAddModalOpen: false,
+  prefillDate: null,
+  selectedTrade: null,
+};
+
+export const fetchTrades = createAsyncThunk(
+  'trades/fetchTrades',
+  async (_, { getState, rejectWithValue }) => {
+    const { workspace } = getState();
+    const market = workspace.markets.find((m) => m.id === workspace.selectedMarketId);
+    if (!market?.id) {
+      return { trades: [] };
+    }
+    try {
+      const res = await tradesApi.getByMarket(market.id);
+      const list = (res.data || []).map(apiTradeToUi);
+      return { trades: list };
+    } catch (e) {
+      return rejectWithValue(
+        e.response?.data?.message || e.message || 'Failed to load trades'
+      );
+    }
+  }
+);
+
+export const addTrade = createAsyncThunk(
+  'trades/addTrade',
+  async (newTradeData, { getState, rejectWithValue }) => {
+    const { auth, workspace } = getState();
+    const user = auth.user;
+    const market = workspace.markets.find((m) => m.id === workspace.selectedMarketId);
+    if (!user?.id || !market) {
+      return rejectWithValue('Account not ready');
+    }
+    const strategyId = resolveStrategyId(workspace.strategiesByName, newTradeData.setup);
+    if (!strategyId) {
+      return rejectWithValue('No strategy available for this setup');
+    }
+    try {
+      const payload = uiTradeToApi(newTradeData, {
+        userId: Number(user.id),
+        marketId: market.id,
+        marketName: market.name,
+        strategyId,
+      });
+      const res = await tradesApi.create(payload);
+      return apiTradeToUi(res.data);
+    } catch (e) {
+      return rejectWithValue(e.response?.data?.message || e.message || 'Failed to add trade');
+    }
+  }
+);
+
+export const deleteTrade = createAsyncThunk(
+  'trades/deleteTrade',
+  async (tradeId, { getState, rejectWithValue }) => {
+    try {
+      await tradesApi.delete(tradeId);
+      const selectedId = getState().trades.selectedTrade?.id;
+      return { tradeId, clearSelection: selectedId === tradeId };
+    } catch (e) {
+      return rejectWithValue(e.response?.data?.message || e.message || 'Failed to delete trade');
+    }
+  }
+);
+
+const tradesSlice = createSlice({
+  name: 'trades',
+  initialState: initialTradesState,
+  reducers: {
+    setIsAddModalOpen(state, action) {
+      state.isAddModalOpen = action.payload;
+    },
+    openAddTradeModal(state, action) {
+      state.prefillDate = action.payload ?? null;
+      state.isAddModalOpen = true;
+    },
+    setSelectedTrade(state, action) {
+      state.selectedTrade = action.payload;
+    },
+    resetTrades() {
+      return { ...initialTradesState };
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(logout, () => ({ ...initialTradesState }))
+      .addCase(fetchTrades.pending, (state) => {
+        state.tradesLoading = true;
+        state.tradesError = null;
+      })
+      .addCase(fetchTrades.fulfilled, (state, action) => {
+        state.tradesLoading = false;
+        state.rawTrades = action.payload.trades;
+      })
+      .addCase(fetchTrades.rejected, (state, action) => {
+        state.tradesLoading = false;
+        state.tradesError = action.payload || 'Failed to load trades';
+        state.rawTrades = [];
+      })
+      .addCase(addTrade.fulfilled, (state, action) => {
+        state.rawTrades = [action.payload, ...state.rawTrades];
+      })
+      .addCase(deleteTrade.fulfilled, (state, action) => {
+        const { tradeId, clearSelection } = action.payload;
+        state.rawTrades = state.rawTrades.filter((t) => t.id !== tradeId);
+        if (clearSelection) state.selectedTrade = null;
+      });
+  },
+});
+
+export const {
+  setIsAddModalOpen,
+  openAddTradeModal,
+  setSelectedTrade,
+  resetTrades,
+} = tradesSlice.actions;
+
+export { fetchTrades as refreshTrades };
+
+export default tradesSlice.reducer;

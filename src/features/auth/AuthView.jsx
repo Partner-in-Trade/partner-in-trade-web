@@ -9,21 +9,25 @@ import {
   BarChart2,
   Calendar,
 } from 'lucide-react';
-import { useAuth } from '@/app/providers/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  login,
+  register,
+  bypassAuth,
+  loginWithGoogle,
+  clearAuthError,
+  selectAuthError,
+  selectAuthLoading,
+  selectIsDevBypassEnabled,
+} from '@/app/store';
 import { LOGO_ALT, LOGO_SRC } from '@/constants/branding';
 import { GoogleIcon } from '@/components/ui/GoogleIcon';
 
 export function AuthView() {
-  const {
-    login,
-    register,
-    bypassAuth,
-    loginWithGoogle,
-    authError,
-    authLoading,
-    isDevBypassEnabled,
-    clearAuthError,
-  } = useAuth();
+  const dispatch = useDispatch();
+  const authError = useSelector(selectAuthError);
+  const authLoading = useSelector(selectAuthLoading);
+  const isDevBypassEnabled = selectIsDevBypassEnabled();
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({
     fullName: '',
@@ -33,15 +37,17 @@ export function AuthView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    clearAuthError();
+    dispatch(clearAuthError());
     if (mode === 'login') {
-      await login({ email: form.email, password: form.password });
+      await dispatch(login({ email: form.email, password: form.password }));
     } else {
-      await register({
-        fullName: form.fullName,
-        email: form.email,
-        password: form.password,
-      });
+      await dispatch(
+        register({
+          fullName: form.fullName,
+          email: form.email,
+          password: form.password,
+        })
+      );
     }
   };
 
@@ -141,7 +147,7 @@ export function AuthView() {
                   </div>
                   <button
                     type="button"
-                    onClick={bypassAuth}
+                    onClick={() => dispatch(bypassAuth())}
                     className="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition"
                   >
                     <Zap className="w-3.5 h-3.5" />
@@ -151,7 +157,7 @@ export function AuthView() {
 
                 <button
                   type="button"
-                  onClick={loginWithGoogle}
+                  onClick={() => dispatch(loginWithGoogle())}
                   className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-sm flex items-center justify-center gap-3 border border-slate-200/20 shadow-sm transition"
                 >
                   <GoogleIcon className="h-5 w-5 shrink-0" />
@@ -213,7 +219,7 @@ export function AuthView() {
                   {mode === 'login' && isDevBypassEnabled && (
                     <button
                       type="button"
-                      onClick={bypassAuth}
+                      onClick={() => dispatch(bypassAuth())}
                       className="text-xs text-indigo-400 hover:text-indigo-300"
                     >
                       Dev bypass

@@ -50,7 +50,25 @@ If `npm run dev` fails, start Vite directly:
 ```bash
 npm run build    # production build → dist/
 npm run preview  # serve dist locally
+npm run test:run # Vitest (single run, CI-friendly)
 ```
+
+### Tests (no npm required)
+
+From this directory (`partner_in_trade_web` — do not `cd partner_in_trade_web` again if you are already here):
+
+```bash
+node --run test:run
+```
+
+Or invoke Vitest directly:
+
+```bash
+node ./node_modules/vitest/vitest.mjs run
+# ./node_modules/.bin/vitest run
+```
+
+If you install npm (`sudo pacman -S npm`), `npm run test:run` works the same way.
 
 ## Project structure
 

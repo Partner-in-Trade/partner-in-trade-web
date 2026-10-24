@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, ImagePlus, Calendar, Clock } from 'lucide-react';
-import { useTrades } from '@/app/providers/TradeContext';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  addTrade,
+  setIsAddModalOpen,
+  selectIsAddModalOpen,
+  selectPrefillDate,
+} from '@/app/store';
 import { CURRENCIES, PLAYBOOK_SETUPS, MISTAKE_TAGS } from '@/data/mockTrades';
 import { canCalculateNetPnl, enrichTrade } from '../utils/tradeCalculations';
 import { Toast } from '@/components/ui/Toast';
@@ -110,7 +116,9 @@ function formatMoney(amount, currency) {
 }
 
 export function TradeEntryModal() {
-  const { isAddModalOpen, setIsAddModalOpen, prefillDate, addTrade } = useTrades();
+  const dispatch = useDispatch();
+  const isAddModalOpen = useSelector(selectIsAddModalOpen);
+  const prefillDate = useSelector(selectPrefillDate);
   const [form, setForm] = useState(() => defaultForm());
   const [toast, setToast] = useState('');
 
@@ -129,10 +137,10 @@ export function TradeEntryModal() {
   const submit = async (e) => {
     e.preventDefault();
     try {
-      await addTrade(formToTradePayload(form));
-      setIsAddModalOpen(false);
+      await dispatch(addTrade(formToTradePayload(form))).unwrap();
+      dispatch(setIsAddModalOpen(false));
     } catch (err) {
-      setToast(err.response?.data?.message || err.message || 'Failed to save trade');
+      setToast(err || 'Failed to save trade');
     }
   };
 
@@ -156,7 +164,7 @@ export function TradeEntryModal() {
           type="button"
           className="absolute inset-0 bg-black/60"
           aria-label="Close add trade panel"
-          onClick={() => setIsAddModalOpen(false)}
+          onClick={() => dispatch(setIsAddModalOpen(false))}
         />
 
         <aside
@@ -172,7 +180,7 @@ export function TradeEntryModal() {
               </h2>
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={() => dispatch(setIsAddModalOpen(false))}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-pit-card hover:text-white"
               >
                 <X className="h-5 w-5" />
@@ -487,7 +495,7 @@ export function TradeEntryModal() {
             <footer className="flex shrink-0 gap-3 border-t border-pit-border bg-pit-bg px-5 py-4">
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={() => dispatch(setIsAddModalOpen(false))}
                 className="flex-1 rounded-lg border border-pit-border py-2.5 text-sm font-medium text-slate-300 hover:bg-pit-card"
               >
                 Cancel

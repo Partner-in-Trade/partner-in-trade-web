@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './providers/AuthContext';
-import { WorkspaceProvider } from './providers/WorkspaceContext';
-import { TradeProvider, useTrades } from './providers/TradeContext';
+import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppEffects } from './AppEffects';
+import {
+  selectActiveTab,
+  selectIsAuthenticated,
+  selectJournalError,
+  selectJournalLoading,
+  setActiveTab,
+} from '@/app/store';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { DashboardView } from '@/features/dashboard/DashboardView';
@@ -13,8 +19,9 @@ import { TradeEntryModal } from '@/features/trades/components/TradeEntryModal';
 import { TradeDetailModal } from '@/features/trades/components/TradeDetailModal';
 import { AuthView } from '@/features/auth/AuthView';
 
-function MainContent({ activeTab, setActiveTab }) {
-  const { loading, error } = useTrades();
+export function MainContent({ activeTab, onNavigate }) {
+  const loading = useSelector(selectJournalLoading);
+  const error = useSelector(selectJournalError);
   const showJournalLoading = loading && activeTab !== 'markets';
 
   if (showJournalLoading) {
@@ -35,7 +42,7 @@ function MainContent({ activeTab, setActiveTab }) {
 
   return (
     <>
-      {activeTab === 'dashboard' && <DashboardView onNavigate={setActiveTab} />}
+      {activeTab === 'dashboard' && <DashboardView onNavigate={onNavigate} />}
       {activeTab === 'calendar' && <CalendarView />}
       {activeTab === 'tradelog' && <TradeLogView />}
       {activeTab === 'analytics' && <AnalyticsView />}
@@ -45,36 +52,36 @@ function MainContent({ activeTab, setActiveTab }) {
 }
 
 function AppShell() {
-  const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const dispatch = useDispatch();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const activeTab = useSelector(selectActiveTab);
+
+  const navigate = (tab) => dispatch(setActiveTab(tab));
 
   if (!isAuthenticated) {
     return <AuthView />;
   }
 
   return (
-    <WorkspaceProvider>
-      <TradeProvider>
-        <div className="min-h-screen bg-pit-bg text-slate-100 flex">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-          <div className="flex-1 flex flex-col min-w-0">
-            <TopHeader activeTab={activeTab} />
-            <main className="flex-1 p-6 overflow-y-auto">
-              <MainContent activeTab={activeTab} setActiveTab={setActiveTab} />
-            </main>
-          </div>
-          <TradeEntryModal />
-          <TradeDetailModal />
+    <div className="min-h-screen bg-pit-bg text-slate-100 flex">
+        <Sidebar activeTab={activeTab} setActiveTab={navigate} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <TopHeader activeTab={activeTab} />
+          <main className="flex-1 p-6 overflow-y-auto">
+            <MainContent activeTab={activeTab} onNavigate={navigate} />
+          </main>
         </div>
-      </TradeProvider>
-    </WorkspaceProvider>
+        <TradeEntryModal />
+        <TradeDetailModal />
+      </div>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
+    <>
+      <AppEffects />
       <AppShell />
-    </AuthProvider>
+    </>
   );
 }

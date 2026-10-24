@@ -1,7 +1,14 @@
 import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { DollarSign, Percent, Activity, Scale, Compass, Award, PlusCircle } from 'lucide-react';
-import { useTrades } from '@/app/providers/TradeContext';
-import { useWorkspace } from '@/app/providers/WorkspaceContext';
+import {
+  setSelectedMarketId,
+  setSelectedTrade,
+  selectEnrichedTrades,
+  selectMetrics,
+  selectMarkets,
+  selectSelectedMarketId,
+} from '@/app/store';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { EquityCurveChart } from './components/EquityCurveChart';
 import { DailyPnlChart } from './components/DailyPnlChart';
@@ -14,8 +21,11 @@ function formatMarketLabel(m) {
 }
 
 export function DashboardView({ onNavigate }) {
-  const { trades, metrics, setSelectedTrade } = useTrades();
-  const { markets, selectedMarketId, setSelectedMarketId } = useWorkspace();
+  const dispatch = useDispatch();
+  const trades = useSelector(selectEnrichedTrades);
+  const metrics = useSelector(selectMetrics);
+  const markets = useSelector(selectMarkets);
+  const selectedMarketId = useSelector(selectSelectedMarketId);
 
   if (markets.length === 0) {
     return (
@@ -42,7 +52,7 @@ export function DashboardView({ onNavigate }) {
         <label className="text-xs text-slate-400 shrink-0">Active market</label>
         <select
           value={selectedMarketId ?? ''}
-          onChange={(e) => setSelectedMarketId(Number(e.target.value))}
+          onChange={(e) => dispatch(setSelectedMarketId(Number(e.target.value)))}
           className="max-w-md rounded-lg border border-pit-border bg-pit-bg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
         >
           {markets.map((m) => (
@@ -65,7 +75,10 @@ export function DashboardView({ onNavigate }) {
         <EquityCurveChart data={metrics.equityCurve} />
         <DailyPnlChart data={metrics.dailySeries} />
       </div>
-      <RecentTradesTable trades={trades} onSelectTrade={setSelectedTrade} />
+      <RecentTradesTable
+        trades={trades}
+        onSelectTrade={(trade) => dispatch(setSelectedTrade(trade))}
+      />
     </div>
   );
 }
