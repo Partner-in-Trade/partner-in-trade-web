@@ -8,6 +8,7 @@ export function TopHeader({ activeTab }) {
   const titles = {
     dashboard: 'Performance Overview',
     calendar: 'Monthly P&L Calendar',
+    journal: 'Trading Journal',
     tradelog: 'Manual Trade Execution Log',
     analytics: 'Playbooks, Edge & Mistake Analytics',
     markets: 'Markets & Capital',

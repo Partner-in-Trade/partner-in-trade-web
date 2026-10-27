@@ -25,10 +25,16 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+function isDevMockJwt() {
+  if (!import.meta.env.DEV) return false;
+  const token = localStorage.getItem(JWT_STORAGE_KEY);
+  return typeof token === 'string' && token.startsWith('mock-jwt');
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && onUnauthorized) {
+    if (error.response?.status === 401 && onUnauthorized && !isDevMockJwt()) {
       onUnauthorized();
     }
     return Promise.reject(error);

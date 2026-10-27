@@ -5,7 +5,7 @@ import { CalendarView } from './CalendarView';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 describe('CalendarView', () => {
-  it('opens add trade modal when clicking empty day', async () => {
+  it('opens journal day view when clicking a day', async () => {
     const user = userEvent.setup();
     const { store } = renderWithProviders(<CalendarView />, {
       preloadedState: {
@@ -17,10 +17,22 @@ describe('CalendarView', () => {
           prefillDate: null,
           selectedTrade: null,
         },
+        journal: {
+          summariesByDate: {},
+          dailyByDate: {},
+          dailyLoading: false,
+          dailySaving: false,
+          dailyError: null,
+          selectedDate: '2025-05-01',
+          mainView: 'day',
+          journalNavExpanded: false,
+        },
+        ui: { activeTab: 'calendar' },
       },
     });
     await user.click(screen.getByText('15'));
-    expect(store.getState().trades.isAddModalOpen).toBe(true);
-    expect(store.getState().trades.prefillDate).toMatch(/2025-05-/);
+    expect(store.getState().journal.mainView).toBe('day');
+    expect(store.getState().journal.selectedDate).toMatch(/2025-05-/);
+    expect(store.getState().ui.activeTab).toBe('journal');
   });
 });

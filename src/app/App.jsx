@@ -16,6 +16,7 @@ import { TradeLogView } from '@/features/trades/components/TradeLogView';
 import { AnalyticsView } from '@/features/analytics/AnalyticsView';
 import { MarketsView } from '@/features/markets/MarketsView';
 import { NewsCalendarView } from '@/features/news/NewsCalendarView';
+import { JournalView } from '@/features/journal/JournalView';
 import { TradeEntryModal } from '@/features/trades/components/TradeEntryModal';
 import { TradeDetailModal } from '@/features/trades/components/TradeDetailModal';
 import { AuthView } from '@/features/auth/AuthView';
@@ -23,7 +24,8 @@ import { AuthView } from '@/features/auth/AuthView';
 export function MainContent({ activeTab, onNavigate }) {
   const loading = useSelector(selectJournalLoading);
   const error = useSelector(selectJournalError);
-  const journalIndependentTab = activeTab === 'markets' || activeTab === 'news-calendar';
+  const journalIndependentTab =
+    activeTab === 'markets' || activeTab === 'news-calendar' || activeTab === 'journal';
   const showJournalLoading = loading && !journalIndependentTab;
 
   if (showJournalLoading) {
@@ -50,6 +52,7 @@ export function MainContent({ activeTab, onNavigate }) {
       {activeTab === 'analytics' && <AnalyticsView />}
       {activeTab === 'markets' && <MarketsView />}
       {activeTab === 'news-calendar' && <NewsCalendarView />}
+      {activeTab === 'journal' && <JournalView />}
     </>
   );
 }

@@ -1,15 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  openAddTradeModal,
-  setSelectedTrade,
   selectEnrichedTrades,
+  fetchJournalRange,
+  selectJournalSummariesByDate,
+  setActiveTab,
 } from '@/app/store';
+import { openJournalDayView } from '@/app/store/slices/journalSlice';
 
 export function CalendarView() {
   const dispatch = useDispatch();
   const trades = useSelector(selectEnrichedTrades);
+  const summariesByDate = useSelector(selectJournalSummariesByDate);
   const [currentMonth, setCurrentMonth] = useState(() => new Date(2025, 4, 1));
 
   const year = currentMonth.getFullYear();
@@ -28,6 +31,12 @@ export function CalendarView() {
     });
     return map;
   }, [trades]);
+
+  useEffect(() => {
+    const from = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const to = `${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+    dispatch(fetchJournalRange({ from, to }));
+  }, [year, month, daysInMonth, dispatch]);
 
   const cells = [];
   for (let i = 0; i < firstDayWeekday; i++) cells.push(null);
@@ -55,9 +64,24 @@ export function CalendarView() {
             const { day, dateStr, summary } = cell;
             const hasTrades = Boolean(summary);
             const isGreen = hasTrades && summary.netPnl >= 0;
+            const journalSummary = summariesByDate[dateStr];
+            const hasJournal = journalSummary?.hasEntry;
             return (
-              <div key={dateStr} onClick={() => hasTrades ? dispatch(setSelectedTrade(summary.items[0])) : dispatch(openAddTradeModal(dateStr))} className={`h-28 rounded-lg p-2.5 border transition cursor-pointer flex flex-col justify-between ${!hasTrades ? 'bg-pit-bg/80 border-pit-border' : isGreen ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
-                <div className="flex items-center justify-between"><span className="text-xs font-mono text-slate-400">{day}</span><Plus className="w-3 h-3 text-slate-400" /></div>
+              <div
+                key={dateStr}
+                onClick={() => {
+                  dispatch(openJournalDayView(dateStr));
+                  dispatch(setActiveTab('journal'));
+                }}
+                className={`h-28 rounded-lg p-2.5 border transition cursor-pointer flex flex-col justify-between ${!hasTrades ? 'bg-pit-bg/80 border-pit-border' : isGreen ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-slate-400">{day}</span>
+                  <div className="flex items-center gap-1">
+                    {hasJournal && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" title="Journal entry" />}
+                    <Plus className="w-3 h-3 text-slate-400" />
+                  </div>
+                </div>
                 {hasTrades && (
                   <div className="text-right">
                     <div className={`text-sm font-mono font-bold ${isGreen ? 'text-pit-profit' : 'text-pit-loss'}`}>{isGreen ? '+' : ''}${summary.netPnl.toFixed(0)}</div>
