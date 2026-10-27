@@ -11,6 +11,8 @@ import {
   TrendingUp,
   LogOut,
   Newspaper,
+  BookOpen,
+  ChevronDown,
 } from 'lucide-react';
 import {
   openAddTradeModal,
@@ -20,23 +22,48 @@ import {
   selectIsDevBypassEnabled,
   selectSelectedMarket,
   selectJournalLoading,
+  setActiveTab,
+  selectActiveTab,
 } from '@/app/store';
+import {
+  openJournalDayView,
+  selectJournalNavExpanded,
+  setJournalNavExpanded,
+} from '@/app/store/slices/journalSlice';
+import { JournalSidebarPanel } from '@/features/journal/components/JournalSidebarPanel';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'calendar', label: 'P&L Calendar', icon: CalendarIcon },
+  { id: 'journal', label: 'Journal', icon: BookOpen, expandable: true },
   { id: 'tradelog', label: 'Trade Log', icon: Table2 },
   { id: 'analytics', label: 'Playbooks & Edge', icon: BarChart3 },
   { id: 'markets', label: 'Markets', icon: Wallet },
   { id: 'news-calendar', label: 'News Calendar', icon: Newspaper },
 ];
 
-export function Sidebar({ activeTab, setActiveTab }) {
+export function Sidebar({ activeTab, setActiveTab: setActiveTabProp }) {
   const dispatch = useDispatch();
   const loading = useSelector(selectJournalLoading);
   const selectedMarket = useSelector(selectSelectedMarket);
   const user = useSelector(selectUser);
   const isDevBypassEnabled = selectIsDevBypassEnabled();
+  const journalExpanded = useSelector(selectJournalNavExpanded);
+  const currentTab = useSelector(selectActiveTab);
+
+  const navigate = (tab) => {
+    if (setActiveTabProp) setActiveTabProp(tab);
+    else dispatch(setActiveTab(tab));
+  };
+
+  const handleJournalClick = () => {
+    const nextExpanded = currentTab === 'journal' ? !journalExpanded : true;
+    navigate('journal');
+    dispatch(setJournalNavExpanded(nextExpanded));
+    if (currentTab !== 'journal') {
+      dispatch(openJournalDayView());
+    }
+  };
 
   return (
     <aside className="w-64 bg-pit-card border-r border-pit-border flex flex-col justify-between shrink-0">
@@ -71,10 +98,33 @@ export function Sidebar({ activeTab, setActiveTab }) {
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
+            if (item.expandable) {
+              return (
+                <div key={item.id}>
+                  <button
+                    type="button"
+                    onClick={handleJournalClick}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                      active
+                        ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/30'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition ${journalExpanded && active ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {active && journalExpanded && <JournalSidebarPanel />}
+                </div>
+              );
+            }
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                type="button"
+                onClick={() => navigate(item.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
                   active
                     ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/30'

@@ -70,4 +70,35 @@ export const handlers = [
   http.delete(`${API_BASE}/trades/:tradeId`, () => HttpResponse.json({ success: true })),
 
   http.get(`${API_BASE}/news/this-week`, () => HttpResponse.json(mockEconomicEvents)),
+
+  http.get(`${API_BASE}/daily-journals`, () => HttpResponse.json([])),
+
+  http.get(`${API_BASE}/daily-journals/:date`, ({ params }) => {
+    if (params.date === '2025-05-15') {
+      return HttpResponse.json({
+        journalDate: '2025-05-15',
+        title: 'Disciplined session',
+        marketOverview: '<p>Overview</p>',
+        whatWentWell: '<p>Win</p>',
+        whatToImprove: '<p>Fix</p>',
+        screenshotsJson: [],
+      });
+    }
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.post(`${API_BASE}/journal-media`, async () =>
+    HttpResponse.json({
+      url: 'https://ik.imagekit.io/mock/journals/test.png',
+      fileId: 'mock-file-id',
+    })
+  ),
+
+  http.put(`${API_BASE}/daily-journals/:date`, async ({ params, request }) => {
+    const body = await request.json();
+    return HttpResponse.json({
+      journalDate: params.date,
+      ...body,
+    });
+  }),
 ];

@@ -30,6 +30,58 @@
   animation: slide-in-right 0.25s ease-out;
 }
 
+/* TipTap / ProseMirror — Tailwind preflight hides list markers without typography plugin */
+.pit-rich-text ul {
+  list-style-type: disc;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.pit-rich-text ol {
+  list-style-type: decimal;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.pit-rich-text li {
+  margin: 0.25rem 0;
+}
+
+.pit-rich-text li p {
+  margin: 0;
+}
+
+.pit-rich-text h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.35rem;
+}
+
+.pit-rich-text ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.pit-rich-text ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pit-rich-text ul[data-type='taskList'] li label {
+  margin-top: 0.15rem;
+}
+
+.pit-rich-text img,
+.pit-rich-text-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.75rem 0;
+  border-radius: 0.5rem;
+  border: 1px solid var(--pit-border, rgb(51 65 85 / 0.5));
+}
+
 .pit-datetime-input::-webkit-calendar-picker-indicator {
   opacity: 0;
   position: absolute;

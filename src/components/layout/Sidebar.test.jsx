@@ -60,6 +60,40 @@ describe('Sidebar', () => {
     expect(screen.getByRole('button', { name: /Log Manual Trade/i })).toBeDisabled();
   });
 
+  it('journal sidebar calendar day switches to day view', async () => {
+    const user = userEvent.setup();
+    const onTab = vi.fn();
+    const { store } = renderWithProviders(
+      <Sidebar activeTab="journal" setActiveTab={onTab} />,
+      {
+        preloadedState: {
+          auth: { user: mockUser, authError: null, authLoading: false },
+          workspace: {
+            markets: [{ id: 10, name: 'Forex' }],
+            selectedMarketId: 10,
+            strategiesByName: {},
+            workspaceLoading: false,
+            workspaceError: null,
+          },
+          journal: {
+            summariesByDate: {},
+            dailyByDate: {},
+            dailyLoading: false,
+            dailySaving: false,
+            dailyError: null,
+            selectedDate: '2025-05-01',
+            mainView: 'write',
+            journalNavExpanded: true,
+          },
+        },
+      }
+    );
+
+    await user.click(screen.getByRole('button', { name: '12' }));
+    expect(store.getState().journal.mainView).toBe('day');
+    expect(store.getState().journal.selectedDate).toBe('2025-05-12');
+  });
+
   it('logout clears auth state', async () => {
     const user = userEvent.setup();
     const { store } = renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={() => {}} />, {
