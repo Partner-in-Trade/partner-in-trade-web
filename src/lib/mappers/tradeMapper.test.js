@@ -11,6 +11,8 @@ describe('tradeMapper', () => {
     const ui = apiTradeToUi(mockApiTrade);
     expect(ui.symbol).toBe('AAPL');
     expect(ui.date).toBe('2025-05-01');
+    expect(ui.entryDate).toBe('2025-05-01');
+    expect(ui.exitDate).toBe('2025-05-01');
     expect(ui.entryTime).toBe('09:35');
     expect(ui.setup).toBe('VWAP Bounce');
   });
@@ -27,6 +29,38 @@ describe('tradeMapper', () => {
     expect(payload.strategyId).toBe(5);
     expect(payload.status).toBe('CLOSED');
     expect(payload.exitPrice).toBe(110);
+    expect(payload.entryDate).toBe('2025-05-01T09:35:00');
+    expect(payload.exitDate).toBe('2025-05-01T10:05:00');
+    expect(payload.timeframe).toBe('5m');
+  });
+
+  it('uiTradeToApi uses separate exit date when provided', () => {
+    const payload = uiTradeToApi(
+      {
+        ...mockUiTrade,
+        entryDate: '2025-05-01',
+        exitDate: '2025-05-02',
+        exitTime: '11:00',
+      },
+      {
+        userId: 1,
+        marketId: 10,
+        marketName: 'Forex',
+        strategyId: 5,
+      }
+    );
+    expect(payload.entryDate).toBe('2025-05-01T09:35:00');
+    expect(payload.exitDate).toBe('2025-05-02T11:00:00');
+  });
+
+  it('uiTradeToApi uses custom timeframe when provided', () => {
+    const payload = uiTradeToApi({ ...mockUiTrade, timeframe: '15m' }, {
+      userId: 1,
+      marketId: 10,
+      marketName: 'Forex',
+      strategyId: 5,
+    });
+    expect(payload.timeframe).toBe('15m');
   });
 
   it('resolveStrategyId prefers setup name then falls back', () => {

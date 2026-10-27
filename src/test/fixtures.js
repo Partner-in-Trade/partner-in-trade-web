@@ -42,6 +42,7 @@ export const mockApiTrade = {
   stopLoss: 95,
   status: 'CLOSED',
   strategyUsed: 'VWAP Bounce',
+  timeframe: '5m',
   notes: 'Test note',
   emotion: 'Focused',
 };
@@ -49,6 +50,8 @@ export const mockApiTrade = {
 export const mockUiTrade = {
   id: '100',
   date: '2025-05-01',
+  entryDate: '2025-05-01',
+  exitDate: '2025-05-01',
   entryTime: '09:35',
   exitTime: '10:05',
   symbol: 'AAPL',
@@ -62,6 +65,7 @@ export const mockUiTrade = {
   takeProfit: '',
   fees: 0,
   setup: 'VWAP Bounce',
+  timeframe: '5m',
   mistake: 'None',
   notes: 'Test note',
   emotion: 'Focused',

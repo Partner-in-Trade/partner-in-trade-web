@@ -10,6 +10,7 @@ import {
   selectSelectedMarketId,
 } from '@/app/store';
 import { assetClassFromMarketType } from '@/constants/markets';
+import { DEFAULT_TIMEFRAME, TIMEFRAMES } from '@/constants/timeframes';
 import { symbolCatalogTypeForMarketType } from '@/data/symbolCatalog';
 import { CURRENCIES, PLAYBOOK_SETUPS, MISTAKE_TAGS } from '@/data/mockTrades';
 import { canCalculateNetPnl, enrichTrade } from '../utils/tradeCalculations';
@@ -23,12 +24,14 @@ function todayIsoDate() {
 }
 
 function defaultForm(dateOverride, marketId) {
+  const day = dateOverride || todayIsoDate();
   return {
     marketId: marketId ?? '',
     symbol: '',
     currency: 'USD',
     direction: 'LONG',
-    date: dateOverride || todayIsoDate(),
+    entryDate: day,
+    exitDate: day,
     entryTime: '09:35',
     exitTime: '10:05',
     entryPrice: '',
@@ -38,6 +41,7 @@ function defaultForm(dateOverride, marketId) {
     stopLoss: '',
     takeProfit: '',
     setup: PLAYBOOK_SETUPS[0],
+    timeframe: DEFAULT_TIMEFRAME,
     mistake: 'None',
     notes: '',
   };
@@ -275,16 +279,29 @@ export function TradeEntryModal() {
                     </div>
                   </div>
                   <div>
-                    <FieldLabel>Date</FieldLabel>
-                    <IconInput
-                      icon={Calendar}
-                      type="date"
+                    <FieldLabel>Timeframe</FieldLabel>
+                    <select
                       required
-                      value={form.date}
-                      onChange={(e) => set({ date: e.target.value })}
-                    />
+                      value={form.timeframe}
+                      onChange={(e) => set({ timeframe: e.target.value })}
+                      className={inputClass()}
+                    >
+                      {TIMEFRAMES.map((tf) => (
+                        <option key={tf} value={tf}>{tf}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="grid grid-cols-2 gap-3 items-end">
+                    <div>
+                      <FieldLabel>Entry date</FieldLabel>
+                      <IconInput
+                        icon={Calendar}
+                        type="date"
+                        required
+                        value={form.entryDate}
+                        onChange={(e) => set({ entryDate: e.target.value })}
+                      />
+                    </div>
                     <div>
                       <FieldLabel>Time in</FieldLabel>
                       <IconInput
@@ -293,6 +310,17 @@ export function TradeEntryModal() {
                         required
                         value={form.entryTime}
                         onChange={(e) => set({ entryTime: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel hint="Optional until the trade is closed." reserveHintSpace>
+                        Exit date
+                      </FieldLabel>
+                      <IconInput
+                        icon={Calendar}
+                        type="date"
+                        value={form.exitDate}
+                        onChange={(e) => set({ exitDate: e.target.value })}
                       />
                     </div>
                     <div>
@@ -552,7 +580,9 @@ export function TradeEntryModal() {
 function formToTradePayload(form, markets) {
   const market = markets.find((m) => Number(m.id) === Number(form.marketId));
   return {
-    date: form.date,
+    date: form.entryDate,
+    entryDate: form.entryDate,
+    exitDate: form.exitDate,
     entryTime: form.entryTime,
     exitTime: form.exitTime,
     symbol: form.symbol.toUpperCase().trim(),
@@ -567,6 +597,7 @@ function formToTradePayload(form, markets) {
     takeProfit: form.takeProfit === '' ? '' : Math.max(0, Number(form.takeProfit)),
     fees: Math.max(0, Number(form.fees) || 0),
     setup: form.setup,
+    timeframe: form.timeframe || DEFAULT_TIMEFRAME,
     mistake: form.mistake,
     notes: form.notes,
     emotion: 'Focused',
