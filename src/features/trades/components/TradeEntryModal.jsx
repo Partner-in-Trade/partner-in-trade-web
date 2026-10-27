@@ -6,20 +6,15 @@ import {
   setIsAddModalOpen,
   selectIsAddModalOpen,
   selectPrefillDate,
+  selectMarkets,
+  selectSelectedMarketId,
 } from '@/app/store';
+import { assetClassFromMarketType } from '@/constants/markets';
+import { symbolCatalogTypeForMarketType } from '@/data/symbolCatalog';
 import { CURRENCIES, PLAYBOOK_SETUPS, MISTAKE_TAGS } from '@/data/mockTrades';
 import { canCalculateNetPnl, enrichTrade } from '../utils/tradeCalculations';
 import { Toast } from '@/components/ui/Toast';
-
-const MARKET_OPTIONS = ['Stock', 'Future', 'Option', 'Forex', 'Crypto'];
-
-const MARKET_TO_ASSET_CLASS = {
-  Stock: 'Stocks',
-  Future: 'Futures',
-  Option: 'Options',
-  Forex: 'Forex',
-  Crypto: 'Crypto',
-};
+import { SymbolAutocomplete } from './SymbolAutocomplete';
 
 function todayIsoDate() {
   const d = new Date();
@@ -27,10 +22,10 @@ function todayIsoDate() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function defaultForm(dateOverride) {
+function defaultForm(dateOverride, marketId) {
   return {
+    marketId: marketId ?? '',
     symbol: '',
-    market: 'Stock',
     currency: 'USD',
     direction: 'LONG',
     date: dateOverride || todayIsoDate(),
@@ -119,16 +114,32 @@ export function TradeEntryModal() {
   const dispatch = useDispatch();
   const isAddModalOpen = useSelector(selectIsAddModalOpen);
   const prefillDate = useSelector(selectPrefillDate);
+  const markets = useSelector(selectMarkets);
+  const selectedMarketId = useSelector(selectSelectedMarketId);
   const [form, setForm] = useState(() => defaultForm());
   const [toast, setToast] = useState('');
 
   useEffect(() => {
     if (isAddModalOpen) {
-      setForm(defaultForm(prefillDate || todayIsoDate()));
+      const initialMarketId = selectedMarketId ?? markets[0]?.id ?? '';
+      const market = markets.find((m) => m.id === initialMarketId);
+      setForm({
+        ...defaultForm(prefillDate || todayIsoDate(), initialMarketId),
+        ...(market?.currency ? { currency: market.currency } : {}),
+      });
     }
-  }, [isAddModalOpen, prefillDate]);
+  }, [isAddModalOpen, prefillDate, selectedMarketId, markets]);
 
-  const preview = useMemo(() => enrichTrade(formToTradePayload(form)), [form]);
+  const selectedFormMarket = useMemo(() => {
+    if (form.marketId === '' || form.marketId == null) return null;
+    return markets.find((m) => Number(m.id) === Number(form.marketId)) ?? null;
+  }, [markets, form.marketId]);
+  const symbolCatalogType = symbolCatalogTypeForMarketType(selectedFormMarket?.type);
+
+  const preview = useMemo(
+    () => enrichTrade(formToTradePayload(form, markets)),
+    [form, markets]
+  );
 
   if (!isAddModalOpen) return null;
 
@@ -137,14 +148,14 @@ export function TradeEntryModal() {
   const submit = async (e) => {
     e.preventDefault();
     try {
-      await dispatch(addTrade(formToTradePayload(form))).unwrap();
+      await dispatch(addTrade(formToTradePayload(form, markets))).unwrap();
       dispatch(setIsAddModalOpen(false));
     } catch (err) {
       setToast(err || 'Failed to save trade');
     }
   };
 
-  const pnlReady = canCalculateNetPnl(formToTradePayload(form));
+  const pnlReady = canCalculateNetPnl(formToTradePayload(form, markets));
   const netPnlDisplay = pnlReady
     ? formatMoney(preview.netPnl, form.currency)
     : form.entryPrice !== '' && form.exitPrice === ''
@@ -194,26 +205,47 @@ export function TradeEntryModal() {
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <FieldLabel>Symbol</FieldLabel>
-                    <input
-                      required
-                      value={form.symbol}
-                      onChange={(e) => set({ symbol: e.target.value })}
-                      placeholder="AAPL"
-                      className={`${inputClass()} uppercase font-semibold`}
-                    />
-                  </div>
-                  <div>
                     <FieldLabel>Market</FieldLabel>
                     <select
-                      value={form.market}
-                      onChange={(e) => set({ market: e.target.value })}
+                      required
+                      value={form.marketId}
+                      disabled={markets.length === 0}
+                      onChange={(e) => {
+                        const id = Number(e.target.value);
+                        const market =
+                          markets.find((m) => Number(m.id) === id) ?? null;
+                        const nextType = symbolCatalogTypeForMarketType(market?.type);
+                        const prevType = symbolCatalogTypeForMarketType(
+                          selectedFormMarket?.type
+                        );
+                        set({
+                          marketId: id,
+                          ...(market?.currency ? { currency: market.currency } : {}),
+                          ...(nextType !== prevType ? { symbol: '' } : {}),
+                        });
+                      }}
                       className={inputClass()}
                     >
-                      {MARKET_OPTIONS.map((m) => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
+                      {markets.length === 0 ? (
+                        <option value="">No markets — create one in Markets</option>
+                      ) : (
+                        markets.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.type ? `${m.name} (${m.type})` : m.name}
+                          </option>
+                        ))
+                      )}
                     </select>
+                  </div>
+                  <div>
+                    <FieldLabel>Symbol</FieldLabel>
+                    <SymbolAutocomplete
+                      required
+                      value={form.symbol}
+                      onChange={(symbol) => set({ symbol })}
+                      catalogType={symbolCatalogType}
+                      placeholder="Symbol"
+                    />
                   </div>
                   <div>
                     <FieldLabel>Side</FieldLabel>
@@ -502,7 +534,8 @@ export function TradeEntryModal() {
               </button>
               <button
                 type="submit"
-                className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+                disabled={markets.length === 0}
+                className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
               >
                 Save trade
               </button>
@@ -516,14 +549,15 @@ export function TradeEntryModal() {
   );
 }
 
-function formToTradePayload(form) {
+function formToTradePayload(form, markets) {
+  const market = markets.find((m) => Number(m.id) === Number(form.marketId));
   return {
     date: form.date,
     entryTime: form.entryTime,
     exitTime: form.exitTime,
     symbol: form.symbol.toUpperCase().trim(),
-    assetClass: MARKET_TO_ASSET_CLASS[form.market] || 'Stocks',
-    market: form.market,
+    marketId: form.marketId,
+    assetClass: assetClassFromMarketType(market?.type),
     currency: form.currency,
     direction: form.direction,
     quantity: Math.max(1, Number(form.quantity) || 1),

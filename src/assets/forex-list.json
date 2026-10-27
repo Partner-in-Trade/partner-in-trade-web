@@ -1,0 +1,50 @@
+[
+  { "symbol": "EURUSD", "display": "EUR/USD", "name": "Euro / US Dollar", "category": "Major", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "GBPUSD", "display": "GBP/USD", "name": "British Pound / US Dollar", "category": "Major", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDJPY", "display": "USD/JPY", "name": "US Dollar / Japanese Yen", "category": "Major", "pipSize": 0.01, "lotSize": 100000 },
+  { "symbol": "USDCHF", "display": "USD/CHF", "name": "US Dollar / Swiss Franc", "category": "Major", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "AUDUSD", "display": "AUD/USD", "name": "Australian Dollar / US Dollar", "category": "Major", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDCAD", "display": "USD/CAD", "name": "US Dollar / Canadian Dollar", "category": "Major", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "NZDUSD", "display": "NZD/USD", "name": "New Zealand Dollar / US Dollar", "category": "Major", "pipSize": 0.0001, "lotSize": 100000 },
+
+  { "symbol": "XAUUSD", "display": "XAU/USD", "name": "Spot Gold / US Dollar", "category": "Metals", "pipSize": 0.01, "lotSize": 100 },
+  { "symbol": "XAGUSD", "display": "XAG/USD", "name": "Spot Silver / US Dollar", "category": "Metals", "pipSize": 0.01, "lotSize": 5000 },
+
+  { "symbol": "EURGBP", "display": "EUR/GBP", "name": "Euro / British Pound", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "EURJPY", "display": "EUR/JPY", "name": "Euro / Japanese Yen", "category": "Minor", "pipSize": 0.01, "lotSize": 100000 },
+  { "symbol": "GBPJPY", "display": "GBP/JPY", "name": "British Pound / Japanese Yen", "category": "Minor", "pipSize": 0.01, "lotSize": 100000 },
+  { "symbol": "AUDJPY", "display": "AUD/JPY", "name": "Australian Dollar / Japanese Yen", "category": "Minor", "pipSize": 0.01, "lotSize": 100000 },
+  { "symbol": "CADJPY", "display": "CAD/JPY", "name": "Canadian Dollar / Japanese Yen", "category": "Minor", "pipSize": 0.01, "lotSize": 100000 },
+  { "symbol": "CHFJPY", "display": "CHF/JPY", "name": "Swiss Franc / Japanese Yen", "category": "Minor", "pipSize": 0.01, "lotSize": 100000 },
+  { "symbol": "NZDJPY", "display": "NZD/JPY", "name": "New Zealand Dollar / Japanese Yen", "category": "Minor", "pipSize": 0.01, "lotSize": 100000 },
+
+  { "symbol": "EURAUD", "display": "EUR/AUD", "name": "Euro / Australian Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "EURCAD", "display": "EUR/CAD", "name": "Euro / Canadian Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "EURCHF", "display": "EUR/CHF", "name": "Euro / Swiss Franc", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "EURNZD", "display": "EUR/NZD", "name": "Euro / New Zealand Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+
+  { "symbol": "GBPAUD", "display": "GBP/AUD", "name": "British Pound / Australian Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "GBPCAD", "display": "GBP/CAD", "name": "British Pound / Canadian Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "GBPCHF", "display": "GBP/CHF", "name": "British Pound / Swiss Franc", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "GBPNZD", "display": "GBP/NZD", "name": "British Pound / New Zealand Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+
+  { "symbol": "AUDCAD", "display": "AUD/CAD", "name": "Australian Dollar / Canadian Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "AUDCHF", "display": "AUD/CHF", "name": "Australian Dollar / Swiss Franc", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "AUDNZD", "display": "AUD/NZD", "name": "Australian Dollar / New Zealand Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "CADCHF", "display": "CAD/CHF", "name": "Canadian Dollar / Swiss Franc", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "NZDCAD", "display": "NZD/CAD", "name": "New Zealand Dollar / Canadian Dollar", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "NZDCHF", "display": "NZD/CHF", "name": "New Zealand Dollar / Swiss Franc", "category": "Minor", "pipSize": 0.0001, "lotSize": 100000 },
+
+  { "symbol": "USDMXN", "display": "USD/MXN", "name": "US Dollar / Mexican Peso", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDZAR", "display": "USD/ZAR", "name": "US Dollar / South African Rand", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDTRY", "display": "USD/TRY", "name": "US Dollar / Turkish Lira", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDSGD", "display": "USD/SGD", "name": "US Dollar / Singapore Dollar", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDHKD", "display": "USD/HKD", "name": "US Dollar / Hong Kong Dollar", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDNOK", "display": "USD/NOK", "name": "US Dollar / Norwegian Krone", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDSEK", "display": "USD/SEK", "name": "US Dollar / Swedish Krona", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "USDINR", "display": "USD/INR", "name": "US Dollar / Indian Rupee", "category": "Exotic", "pipSize": 0.01, "lotSize": 100000 },
+  { "symbol": "USDCNH", "display": "USD/CNH", "name": "US Dollar / Chinese Yuan Offshore", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "EURTRY", "display": "EUR/TRY", "name": "Euro / Turkish Lira", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "EURNOK", "display": "EUR/NOK", "name": "Euro / Norwegian Krone", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 },
+  { "symbol": "EURSEK", "display": "EUR/SEK", "name": "Euro / Swedish Krona", "category": "Exotic", "pipSize": 0.0001, "lotSize": 100000 }
+]

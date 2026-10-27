@@ -57,7 +57,12 @@ describe('workspaceSlice', () => {
   it('createAndActivateMarket updates markets and selection', async () => {
     const store = storeWithUser();
     await store.dispatch(
-      createAndActivateMarket({ name: 'Crypto', funds: 1000, currency: 'USD' })
+      createAndActivateMarket({
+        name: 'My coins',
+        type: 'Crypto',
+        funds: 1000,
+        currency: 'USD',
+      })
     );
     expect(store.getState().workspace.selectedMarketId).toBe(99);
     expect(store.getState().workspace.markets.length).toBeGreaterThan(0);

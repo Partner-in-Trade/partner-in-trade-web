@@ -33,6 +33,9 @@ describe('MarketsView', () => {
         },
       },
     });
+    fireEvent.change(screen.getByPlaceholderText(/Live account/i), {
+      target: { value: 'Test market' },
+    });
     fireEvent.submit(screen.getByRole('button', { name: /Create market/i }).closest('form'));
     expect(screen.getByText(/Initial capital must be a positive number/i)).toBeInTheDocument();
   });
@@ -49,7 +52,7 @@ describe('MarketsView', () => {
         },
       },
     });
-    expect(screen.getAllByText('Forex').length).toBeGreaterThan(0);
+    expect(screen.getByText('My FX account')).toBeInTheDocument();
     expect(screen.getByText('Selected')).toBeInTheDocument();
   });
 });

@@ -9,7 +9,8 @@ export const mockUser = {
 export const mockMarkets = [
   {
     id: 10,
-    name: 'Forex',
+    name: 'My FX account',
+    type: 'Forex',
     currency: 'USD',
     funds: 10000,
     marketActivated: true,
@@ -18,7 +19,8 @@ export const mockMarkets = [
   },
   {
     id: 11,
-    name: 'Stocks',
+    name: 'NSE cash',
+    type: 'Stocks',
     currency: 'USD',
     funds: 5000,
     marketActivated: true,
