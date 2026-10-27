@@ -1,11 +1,14 @@
+import { DEFAULT_TIMEFRAME } from '@/constants/timeframes';
+
 const META_MARKER = '\n---meta---\n';
-const DEFAULT_TIMEFRAME = '5m';
 const DEFAULT_CONFIDENCE = 'MEDIUM';
 
 /**
  * @typedef {Object} UiTradeInput
  * @property {string} [id]
- * @property {string} date
+ * @property {string} [date] entry date (calendar / legacy)
+ * @property {string} [entryDate]
+ * @property {string} [exitDate]
  * @property {string} entryTime
  * @property {string} [exitTime]
  * @property {string} symbol
@@ -19,6 +22,7 @@ const DEFAULT_CONFIDENCE = 'MEDIUM';
  * @property {number|string} [takeProfit]
  * @property {number} [fees]
  * @property {string} setup
+ * @property {string} [timeframe]
  * @property {string} [mistake]
  * @property {string} [notes]
  * @property {string} [emotion]
@@ -78,6 +82,8 @@ export function apiTradeToUi(apiTrade) {
   return {
     id: apiTrade.id,
     date,
+    entryDate: date,
+    exitDate: exitParsed?.date || '',
     entryTime,
     exitTime: exitParsed?.entryTime || '',
     symbol: apiTrade.symbol,
@@ -92,6 +98,7 @@ export function apiTradeToUi(apiTrade) {
     takeProfit: apiTrade.takeProfit ?? '',
     fees: meta.fees ?? 0,
     setup: apiTrade.strategyUsed || meta.setup || 'Unknown',
+    timeframe: apiTrade.timeframe || DEFAULT_TIMEFRAME,
     mistake: meta.mistake ?? 'None',
     notes: text,
     emotion: apiTrade.emotion || 'Focused',
@@ -116,11 +123,13 @@ export function uiTradeToApi(ui, ctx) {
     assetClass: ui.assetClass,
   };
 
+  const entryDay = ui.entryDate || ui.date;
+
   const payload = {
     symbol: ui.symbol,
     direction: ui.direction,
     currency: ui.currency,
-    entryDate: toLocalDateTime(ui.date, ui.entryTime),
+    entryDate: toLocalDateTime(entryDay, ui.entryTime),
     entryPrice: Number(ui.entryPrice),
     positionSize: Number(ui.quantity),
     marketId: ctx.marketId,
@@ -128,7 +137,7 @@ export function uiTradeToApi(ui, ctx) {
     userId: ctx.userId,
     strategyId: ctx.strategyId,
     strategyUsed: ui.setup,
-    timeframe: DEFAULT_TIMEFRAME,
+    timeframe: ui.timeframe || DEFAULT_TIMEFRAME,
     confidenceLevel: DEFAULT_CONFIDENCE,
     status,
     notes: buildNotes(ui.notes, meta),
@@ -137,8 +146,9 @@ export function uiTradeToApi(ui, ctx) {
 
   if (exitPrice != null && !Number.isNaN(exitPrice)) {
     payload.exitPrice = exitPrice;
-    if (ui.exitTime && ui.date) {
-      payload.exitDate = toLocalDateTime(ui.date, ui.exitTime);
+    const exitDay = ui.exitDate || entryDay;
+    if (ui.exitTime && exitDay) {
+      payload.exitDate = toLocalDateTime(exitDay, ui.exitTime);
     }
   }
 
