@@ -41,7 +41,8 @@ export const addTrade = createAsyncThunk(
   async (newTradeData, { getState, rejectWithValue }) => {
     const { auth, workspace } = getState();
     const user = auth.user;
-    const market = workspace.markets.find((m) => m.id === workspace.selectedMarketId);
+    const marketId = newTradeData.marketId ?? workspace.selectedMarketId;
+    const market = workspace.markets.find((m) => m.id === marketId);
     if (!user?.id || !market) {
       return rejectWithValue('Account not ready');
     }
@@ -57,7 +58,10 @@ export const addTrade = createAsyncThunk(
         strategyId,
       });
       const res = await tradesApi.create(payload);
-      return apiTradeToUi(res.data);
+      return {
+        trade: apiTradeToUi(res.data),
+        appendToList: market.id === workspace.selectedMarketId,
+      };
     } catch (e) {
       return rejectWithValue(e.response?.data?.message || e.message || 'Failed to add trade');
     }
@@ -112,7 +116,9 @@ const tradesSlice = createSlice({
         state.rawTrades = [];
       })
       .addCase(addTrade.fulfilled, (state, action) => {
-        state.rawTrades = [action.payload, ...state.rawTrades];
+        if (action.payload.appendToList) {
+          state.rawTrades = [action.payload.trade, ...state.rawTrades];
+        }
       })
       .addCase(deleteTrade.fulfilled, (state, action) => {
         const { tradeId, clearSelection } = action.payload;

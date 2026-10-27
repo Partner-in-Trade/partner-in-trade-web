@@ -1,5 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { marketsApi } from '@/features/markets/api/marketsApi';
+import {
+  clearStoredMarketType,
+  saveMarketType,
+  withMarketTypes,
+} from '@/features/markets/marketTypeStore';
 import { ensureStrategies } from '@/lib/bootstrap/ensureUserWorkspace';
 import { logout } from './authSlice';
 
@@ -26,7 +31,9 @@ export const bootstrapWorkspace = createAsyncThunk(
     const userId = Number(user.id);
     try {
       const [marketList, strategyMap] = await Promise.all([
-        marketsApi.getMarkets(userId).then((res) => res.data || []),
+        marketsApi
+          .getMarkets(userId)
+          .then((res) => withMarketTypes(res.data || [])),
         ensureStrategies(userId),
       ]);
       return { marketList, strategyMap };
@@ -40,18 +47,21 @@ export const bootstrapWorkspace = createAsyncThunk(
 
 export const createAndActivateMarket = createAsyncThunk(
   'workspace/createAndActivateMarket',
-  async ({ name, funds, currency }, { getState, rejectWithValue }) => {
+  async ({ name, type, funds, currency }, { getState, rejectWithValue }) => {
     const user = getState().auth.user;
     if (!user?.id) return rejectWithValue('Not signed in');
     const userId = Number(user.id);
     try {
-      const created = await marketsApi.createMarket(name.trim(), userId);
+      const created = await marketsApi.createMarket(name.trim(), userId, type);
       const marketId = created.data.id;
+      saveMarketType(marketId, type);
       const activated = await marketsApi.activateMarket(marketId, {
         funds: Number(funds),
         currency,
       });
-      const list = await marketsApi.getMarkets(userId).then((res) => res.data || []);
+      const list = withMarketTypes(
+        await marketsApi.getMarkets(userId).then((res) => res.data || [])
+      );
       return { list, selectedMarketId: activated.data.id };
     } catch (e) {
       return rejectWithValue(e.response?.data?.message || e.message || 'Failed to create market');
@@ -66,10 +76,32 @@ export const addFundsToMarket = createAsyncThunk(
     if (!user?.id) return rejectWithValue('Not signed in');
     try {
       await marketsApi.addFunds(marketId, { funds: Number(funds) });
-      const list = await marketsApi.getMarkets(Number(user.id)).then((res) => res.data || []);
+      const list = withMarketTypes(
+        await marketsApi.getMarkets(Number(user.id)).then((res) => res.data || [])
+      );
       return { list };
     } catch (e) {
       return rejectWithValue(e.response?.data?.message || e.message || 'Failed to add funds');
+    }
+  }
+);
+
+export const deleteMarket = createAsyncThunk(
+  'workspace/deleteMarket',
+  async (marketId, { getState, rejectWithValue }) => {
+    const user = getState().auth.user;
+    if (!user?.id) return rejectWithValue('Not signed in');
+    try {
+      await marketsApi.deleteMarket(marketId, Number(user.id));
+      clearStoredMarketType(marketId);
+      const list = withMarketTypes(
+        await marketsApi.getMarkets(Number(user.id)).then((res) => res.data || [])
+      );
+      return { list, deletedMarketId: Number(marketId) };
+    } catch (e) {
+      return rejectWithValue(
+        e.response?.data?.message || e.message || 'Failed to delete market'
+      );
     }
   }
 );
@@ -142,6 +174,19 @@ const workspaceSlice = createSlice({
       })
       .addCase(addFundsToMarket.fulfilled, (state, action) => {
         state.markets = action.payload.list;
+      })
+      .addCase(deleteMarket.fulfilled, (state, action) => {
+        state.markets = action.payload.list;
+        const deletedId = action.payload.deletedMarketId;
+        if (Number(state.selectedMarketId) === Number(deletedId)) {
+          const next = action.payload.list[0]?.id ?? null;
+          state.selectedMarketId = next;
+          if (next != null) {
+            localStorage.setItem(SELECTED_MARKET_KEY, String(next));
+          } else {
+            localStorage.removeItem(SELECTED_MARKET_KEY);
+          }
+        }
       });
   },
 });

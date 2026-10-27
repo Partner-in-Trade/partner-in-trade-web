@@ -49,7 +49,7 @@ describe('TradeEntryModal', () => {
         },
       },
     });
-    await user.type(screen.getByPlaceholderText('AAPL'), 'MSFT');
+    await user.type(screen.getByPlaceholderText('EURUSD'), 'EURUSD');
     const prices = screen.getAllByPlaceholderText('0.00');
     await user.type(prices[0], '100');
     await user.type(prices[1], '110');

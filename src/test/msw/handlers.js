@@ -27,7 +27,7 @@ export const handlers = [
 
   http.post(`${API_BASE}/markets/create`, async ({ request }) => {
     const body = await request.json();
-    return HttpResponse.json({ id: 99, name: body.name });
+    return HttpResponse.json({ id: 99, name: body.name, type: body.type || null });
   }),
 
   http.put(`${API_BASE}/markets/:marketId/activate`, ({ params }) =>
@@ -40,6 +40,14 @@ export const handlers = [
   ),
 
   http.put(`${API_BASE}/markets/:marketId/funds`, () => HttpResponse.json({ success: true })),
+
+  http.delete(`${API_BASE}/markets/:marketId`, ({ params }) =>
+    HttpResponse.json({
+      success: true,
+      message: 'Market deleted',
+      id: Number(params.marketId),
+    })
+  ),
 
   http.get(`${API_BASE}/strategies/user/:userId`, () =>
     HttpResponse.json(strategiesListResponse())
