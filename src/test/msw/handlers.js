@@ -49,9 +49,23 @@ export const handlers = [
     })
   ),
 
-  http.get(`${API_BASE}/strategies/user/:userId`, () =>
-    HttpResponse.json(strategiesListResponse())
-  ),
+  http.get(`${API_BASE}/strategies/user/:userId`, ({ request }) => {
+    const url = new URL(request.url);
+    const search = (url.searchParams.get('search') || '').toLowerCase();
+    const all = strategiesListResponse().strategies;
+    const filtered = search
+      ? all.filter(
+          (s) =>
+            s.name.toLowerCase().includes(search) ||
+            (s.description || '').toLowerCase().includes(search) ||
+            (s.tags || []).some((t) => t.toLowerCase().includes(search))
+        )
+      : all;
+    return HttpResponse.json({
+      strategies: filtered,
+      pageable: { pageNumber: 0, pageSize: 100, total: filtered.length },
+    });
+  }),
 
   http.post(`${API_BASE}/strategies/add`, async ({ request }) => {
     const body = await request.json();

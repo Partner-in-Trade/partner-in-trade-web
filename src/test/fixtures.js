@@ -82,8 +82,11 @@ export function loginSuccessResponse(email = 'test@example.com') {
   };
 }
 
-export function strategiesListResponse(strategies = [{ id: 5, name: 'VWAP Bounce' }]) {
-  return { strategies, totalElements: strategies.length };
+export function strategiesListResponse(strategies = [{ id: 5, name: 'VWAP Bounce', description: 'Mean reversion', tags: ['VWAP'] }]) {
+  return {
+    strategies,
+    pageable: { pageNumber: 0, pageSize: 100, total: strategies.length },
+  };
 }
 
 export const mockEconomicEvents = [

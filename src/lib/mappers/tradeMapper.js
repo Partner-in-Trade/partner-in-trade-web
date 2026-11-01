@@ -98,6 +98,7 @@ export function apiTradeToUi(apiTrade) {
     takeProfit: apiTrade.takeProfit ?? '',
     fees: meta.fees ?? 0,
     setup: apiTrade.strategyUsed || meta.setup || 'Unknown',
+    strategyId: apiTrade.strategyId,
     timeframe: apiTrade.timeframe || DEFAULT_TIMEFRAME,
     mistake: meta.mistake ?? 'None',
     notes: text,
@@ -161,8 +162,7 @@ export function uiTradeToApi(ui, ctx) {
 }
 
 export function resolveStrategyId(strategiesByName, setupName) {
+  if (!setupName) return null;
   const found = strategiesByName[setupName];
-  if (found) return found;
-  const first = Object.values(strategiesByName)[0];
-  return first ?? null;
+  return found ?? null;
 }

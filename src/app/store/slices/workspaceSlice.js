@@ -5,7 +5,7 @@ import {
   saveMarketType,
   withMarketTypes,
 } from '@/features/markets/marketTypeStore';
-import { ensureStrategies } from '@/lib/bootstrap/ensureUserWorkspace';
+import { loadStrategiesByName } from '@/lib/bootstrap/ensureUserWorkspace';
 import { logout } from './authSlice';
 
 const SELECTED_MARKET_KEY = 'pit_selected_market_id';
@@ -34,7 +34,7 @@ export const bootstrapWorkspace = createAsyncThunk(
         marketsApi
           .getMarkets(userId)
           .then((res) => withMarketTypes(res.data || [])),
-        ensureStrategies(userId),
+        loadStrategiesByName(userId),
       ]);
       return { marketList, strategyMap };
     } catch (e) {
@@ -125,6 +125,12 @@ const workspaceSlice = createSlice({
         selectedMarketId: null,
       };
     },
+    registerStrategyInWorkspace(state, action) {
+      const { name, id } = action.payload;
+      if (name && id != null) {
+        state.strategiesByName[name] = id;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -191,5 +197,6 @@ const workspaceSlice = createSlice({
   },
 });
 
-export const { setSelectedMarketId, resetWorkspace } = workspaceSlice.actions;
+export const { setSelectedMarketId, resetWorkspace, registerStrategyInWorkspace } =
+  workspaceSlice.actions;
 export default workspaceSlice.reducer;

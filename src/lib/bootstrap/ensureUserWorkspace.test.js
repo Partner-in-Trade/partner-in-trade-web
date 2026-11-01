@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ensureStrategies } from './ensureUserWorkspace';
+import { loadStrategiesByName } from './ensureUserWorkspace';
 import { strategiesApi } from '@/features/strategies/api/strategiesApi';
-import { PLAYBOOK_SETUPS } from '@/data/mockTrades';
 
 vi.mock('@/features/strategies/api/strategiesApi', () => ({
   strategiesApi: {
@@ -10,34 +9,34 @@ vi.mock('@/features/strategies/api/strategiesApi', () => ({
   },
 }));
 
-describe('ensureStrategies', () => {
+describe('loadStrategiesByName', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns existing strategies without creating duplicates', async () => {
+  it('builds name to id map from API only', async () => {
     strategiesApi.getByUser.mockResolvedValue({
       data: {
-        strategies: PLAYBOOK_SETUPS.map((name, index) => ({ id: index + 1, name })),
+        strategies: [
+          { id: 1, name: 'Liquidity Sweep' },
+          { id: 2, name: 'FVG' },
+        ],
+        pageable: { total: 2 },
       },
     });
 
-    const map = await ensureStrategies(1);
-    expect(map[PLAYBOOK_SETUPS[0]]).toBe(1);
+    const map = await loadStrategiesByName(1);
+    expect(map).toEqual({ 'Liquidity Sweep': 1, FVG: 2 });
     expect(strategiesApi.create).not.toHaveBeenCalled();
   });
 
-  it('creates missing playbook strategies', async () => {
-    const missing = PLAYBOOK_SETUPS[1];
+  it('does not seed missing strategies', async () => {
     strategiesApi.getByUser.mockResolvedValue({
-      data: { strategies: [{ id: 1, name: PLAYBOOK_SETUPS[0] }] },
+      data: { strategies: [], pageable: { total: 0 } },
     });
-    strategiesApi.create.mockImplementation(async (body) => ({
-      data: { id: 99, name: body.name },
-    }));
 
-    const map = await ensureStrategies(1);
-    expect(map[missing]).toBe(99);
-    expect(strategiesApi.create).toHaveBeenCalled();
+    const map = await loadStrategiesByName(42);
+    expect(map).toEqual({});
+    expect(strategiesApi.create).not.toHaveBeenCalled();
   });
 });

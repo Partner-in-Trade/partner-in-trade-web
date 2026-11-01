@@ -63,10 +63,10 @@ describe('tradeMapper', () => {
     expect(payload.timeframe).toBe('15m');
   });
 
-  it('resolveStrategyId prefers setup name then falls back', () => {
+  it('resolveStrategyId matches setup name exactly', () => {
     const map = { 'VWAP Bounce': 5, 'Gap & Go': 6 };
     expect(resolveStrategyId(map, 'VWAP Bounce')).toBe(5);
-    expect(resolveStrategyId(map, 'Unknown')).toBe(5);
+    expect(resolveStrategyId(map, 'Unknown')).toBeNull();
     expect(resolveStrategyId({}, 'x')).toBeNull();
   });
 });

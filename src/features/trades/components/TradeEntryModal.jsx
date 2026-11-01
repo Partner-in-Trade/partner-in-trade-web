@@ -8,11 +8,12 @@ import {
   selectPrefillDate,
   selectMarkets,
   selectSelectedMarketId,
+  selectStrategyNames,
 } from '@/app/store';
 import { assetClassFromMarketType } from '@/constants/markets';
 import { DEFAULT_TIMEFRAME, TIMEFRAMES } from '@/constants/timeframes';
 import { symbolCatalogTypeForMarketType } from '@/data/symbolCatalog';
-import { CURRENCIES, PLAYBOOK_SETUPS, MISTAKE_TAGS } from '@/data/mockTrades';
+import { CURRENCIES, MISTAKE_TAGS } from '@/data/mockTrades';
 import { canCalculateNetPnl, enrichTrade } from '../utils/tradeCalculations';
 import { Toast } from '@/components/ui/Toast';
 import { SymbolAutocomplete } from './SymbolAutocomplete';
@@ -23,7 +24,7 @@ function todayIsoDate() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function defaultForm(dateOverride, marketId) {
+function defaultForm(dateOverride, marketId, setup = '') {
   const day = dateOverride || todayIsoDate();
   return {
     marketId: marketId ?? '',
@@ -40,7 +41,7 @@ function defaultForm(dateOverride, marketId) {
     fees: '0',
     stopLoss: '',
     takeProfit: '',
-    setup: PLAYBOOK_SETUPS[0],
+    setup,
     timeframe: DEFAULT_TIMEFRAME,
     mistake: 'None',
     notes: '',
@@ -120,6 +121,7 @@ export function TradeEntryModal() {
   const prefillDate = useSelector(selectPrefillDate);
   const markets = useSelector(selectMarkets);
   const selectedMarketId = useSelector(selectSelectedMarketId);
+  const strategyNames = useSelector(selectStrategyNames);
   const [form, setForm] = useState(() => defaultForm());
   const [toast, setToast] = useState('');
 
@@ -127,12 +129,13 @@ export function TradeEntryModal() {
     if (isAddModalOpen) {
       const initialMarketId = selectedMarketId ?? markets[0]?.id ?? '';
       const market = markets.find((m) => m.id === initialMarketId);
+      const defaultSetup = strategyNames[0] || '';
       setForm({
-        ...defaultForm(prefillDate || todayIsoDate(), initialMarketId),
+        ...defaultForm(prefillDate || todayIsoDate(), initialMarketId, defaultSetup),
         ...(market?.currency ? { currency: market.currency } : {}),
       });
     }
-  }, [isAddModalOpen, prefillDate, selectedMarketId, markets]);
+  }, [isAddModalOpen, prefillDate, selectedMarketId, markets, strategyNames]);
 
   const selectedFormMarket = useMemo(() => {
     if (form.marketId === '' || form.marketId == null) return null;
@@ -515,16 +518,24 @@ export function TradeEntryModal() {
                     </button>
                   </div>
                   <div>
-                    <FieldLabel>Setup</FieldLabel>
-                    <select
-                      value={form.setup}
-                      onChange={(e) => set({ setup: e.target.value })}
-                      className={inputClass()}
-                    >
-                      {PLAYBOOK_SETUPS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
+                    <FieldLabel>Strategy</FieldLabel>
+                    {strategyNames.length === 0 ? (
+                      <p className="text-xs text-amber-400/90">
+                        Create a strategy under Strategies before logging trades.
+                      </p>
+                    ) : (
+                      <select
+                        value={form.setup}
+                        onChange={(e) => set({ setup: e.target.value })}
+                        className={inputClass()}
+                      >
+                        {strategyNames.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <div>
                     <FieldLabel>Mistake tag</FieldLabel>
@@ -562,7 +573,7 @@ export function TradeEntryModal() {
               </button>
               <button
                 type="submit"
-                disabled={markets.length === 0}
+                disabled={markets.length === 0 || strategyNames.length === 0 || !form.setup}
                 className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
               >
                 Save trade
