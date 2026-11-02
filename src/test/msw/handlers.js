@@ -72,6 +72,26 @@ export const handlers = [
     return HttpResponse.json({ id: 42, name: body.name, ...body });
   }),
 
+  http.get(`${API_BASE}/strategies/:strategyId`, ({ params }) => {
+    const id = Number(params.strategyId);
+    const strategy = strategiesListResponse().strategies.find((s) => s.id === id) || {
+      id,
+      name: 'Strategy',
+      description: '',
+      tags: [],
+      type: 'Custom',
+      timeframe: '15m',
+    };
+    return HttpResponse.json(strategy);
+  }),
+
+  http.get(`${API_BASE}/strategies/:strategyId/trades`, ({ params }) => {
+    const strategyId = Number(params.strategyId);
+    const trades =
+      mockApiTrade.strategyId === strategyId ? [mockApiTrade] : [];
+    return HttpResponse.json(trades);
+  }),
+
   http.get(`${API_BASE}/trades/market/:marketId`, () =>
     HttpResponse.json([mockApiTrade])
   ),

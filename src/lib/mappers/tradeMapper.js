@@ -99,6 +99,7 @@ export function apiTradeToUi(apiTrade) {
     fees: meta.fees ?? 0,
     setup: apiTrade.strategyUsed || meta.setup || 'Unknown',
     strategyId: apiTrade.strategyId,
+    marketName: apiTrade.marketName,
     timeframe: apiTrade.timeframe || DEFAULT_TIMEFRAME,
     mistake: meta.mistake ?? 'None',
     notes: text,

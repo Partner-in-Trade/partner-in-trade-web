@@ -1,19 +1,28 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Layers, TrendingUp, BarChart2, Hash } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
+  fetchStrategies,
   selectEnrichedTrades,
   selectSelectedMarket,
-  selectUser,
+  selectStrategies,
+  selectStrategiesError,
+  selectStrategiesLoadedSearch,
+  selectStrategiesLoading,
+  selectStrategiesSearch,
+  selectWorkspaceError,
+  selectWorkspaceLoading,
+  setStrategiesSearch,
 } from '@/app/store';
 import { KpiCard } from '@/components/ui/KpiCard';
-import { strategiesApi } from '@/features/strategies/api/strategiesApi';
 import {
   buildStrategyPerformanceMap,
   performanceForStrategy,
   winRatePercent,
 } from '@/features/strategies/utils/strategyPerformance';
 import { StrategyCreateDrawer } from '@/features/strategies/components/StrategyCreateDrawer';
+import { StrategyDetailDrawer } from '@/features/strategies/components/StrategyDetailDrawer';
+import { StrategiesListStatus } from '@/features/strategies/components/StrategiesListStatus';
 
 const SORT_OPTIONS = [
   { id: 'name-asc', label: 'Name (A–Z)' },
@@ -49,42 +58,35 @@ function tagColorClass(tag, index) {
 }
 
 export function StrategiesView() {
-  const user = useSelector(selectUser);
+  const dispatch = useDispatch();
   const selectedMarket = useSelector(selectSelectedMarket);
   const enrichedTrades = useSelector(selectEnrichedTrades);
+  const strategies = useSelector(selectStrategies);
+  const searchInput = useSelector(selectStrategiesSearch);
+  const loadedSearch = useSelector(selectStrategiesLoadedSearch);
+  const strategiesLoading = useSelector(selectStrategiesLoading);
+  const strategiesError = useSelector(selectStrategiesError);
+  const workspaceLoading = useSelector(selectWorkspaceLoading);
+  const workspaceError = useSelector(selectWorkspaceError);
   const currency = selectedMarket?.currency || 'USD';
 
-  const [strategies, setStrategies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const trimmedSearch = searchInput.trim();
   const [sortBy, setSortBy] = useState('name-asc');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailStrategy, setDetailStrategy] = useState(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchInput), 300);
-    return () => clearTimeout(t);
-  }, [searchInput]);
-
-  const loadStrategies = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await strategiesApi.getByUser(Number(user.id), 0, 200, debouncedSearch);
-      setStrategies(res.data?.strategies || []);
-    } catch (e) {
-      setError(e.message || 'Failed to load strategies');
-      setStrategies([]);
-    } finally {
-      setLoading(false);
+    if (trimmedSearch === loadedSearch) {
+      return;
     }
-  }, [user?.id, debouncedSearch]);
+    dispatch(fetchStrategies(trimmedSearch));
+  }, [trimmedSearch, loadedSearch, dispatch]);
 
-  useEffect(() => {
-    loadStrategies();
-  }, [loadStrategies]);
+  const initialLoading = workspaceLoading && strategies.length === 0;
+  const searchPending = trimmedSearch !== loadedSearch || strategiesLoading;
+  const isSearching =
+    searchPending && (trimmedSearch.length > 0 || loadedSearch.length > 0);
+  const error = strategiesError || workspaceError;
 
   const perfMap = useMemo(
     () => buildStrategyPerformanceMap(enrichedTrades),
@@ -185,7 +187,7 @@ export function StrategiesView() {
           <input
             type="search"
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => dispatch(setStrategiesSearch(e.target.value))}
             placeholder="Search strategies…"
             className="w-full rounded-lg border border-pit-border bg-pit-card py-2 pl-10 pr-3 text-sm text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
@@ -210,11 +212,22 @@ export function StrategiesView() {
         {error && (
           <div className="p-4 text-sm text-rose-300 border-b border-pit-border">{error}</div>
         )}
-        {loading ? (
-          <div className="p-8 text-center text-sm text-slate-400">Loading strategies…</div>
+        {initialLoading ? (
+          <StrategiesListStatus
+            message="Loading your strategies…"
+            submessage="Pulling playbooks from your account."
+          />
+        ) : isSearching ? (
+          <StrategiesListStatus
+            pulse
+            message="Zeroing in on your edge…"
+            submessage="Matching names, tags, and notes across your playbook."
+          />
         ) : sortedRows.length === 0 ? (
           <div className="p-8 text-center text-sm text-slate-400">
-            {debouncedSearch ? 'No strategies match your search.' : 'No strategies yet. Create your first one.'}
+            {trimmedSearch
+              ? 'No strategies match your search.'
+              : 'No strategies yet. Create your first one.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -230,7 +243,11 @@ export function StrategiesView() {
               </thead>
               <tbody className="divide-y divide-pit-border">
                 {sortedRows.map(({ strategy, perf, winRate }) => (
-                  <tr key={strategy.id} className="hover:bg-slate-800/30">
+                  <tr
+                    key={strategy.id}
+                    className="cursor-pointer hover:bg-slate-800/30"
+                    onClick={() => setDetailStrategy(strategy)}
+                  >
                     <td className="py-3 px-4">
                       <div className="flex items-start gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-sm font-bold text-indigo-300">
@@ -275,10 +292,11 @@ export function StrategiesView() {
         )}
       </div>
 
-      <StrategyCreateDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onCreated={() => loadStrategies()}
+      <StrategyCreateDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <StrategyDetailDrawer
+        open={detailStrategy != null}
+        strategy={detailStrategy}
+        onClose={() => setDetailStrategy(null)}
       />
     </div>
   );

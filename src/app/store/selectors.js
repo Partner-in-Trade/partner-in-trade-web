@@ -9,6 +9,11 @@ export const selectAuthLoading = (state) => state.auth.authLoading;
 export const selectMarkets = (state) => state.workspace.markets;
 export const selectSelectedMarketId = (state) => state.workspace.selectedMarketId;
 export const selectStrategiesByName = (state) => state.workspace.strategiesByName;
+export const selectStrategies = (state) => state.workspace.strategies;
+export const selectStrategiesSearch = (state) => state.workspace.strategiesSearch;
+export const selectStrategiesLoadedSearch = (state) => state.workspace.strategiesLoadedSearch;
+export const selectStrategiesLoading = (state) => state.workspace.strategiesLoading;
+export const selectStrategiesError = (state) => state.workspace.strategiesError;
 
 export const selectStrategyNames = createSelector([selectStrategiesByName], (byName) =>
   Object.keys(byName).sort((a, b) => a.localeCompare(b))

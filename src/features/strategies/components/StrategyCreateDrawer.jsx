@@ -103,7 +103,7 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
         riskNotes: form.riskNotes.trim() || null,
         userId: Number(user.id),
       });
-      dispatch(registerStrategyInWorkspace({ name: res.data.name, id: res.data.id }));
+      dispatch(registerStrategyInWorkspace(res.data));
       onCreated?.(res.data);
       onClose();
     } catch (err) {

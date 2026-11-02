@@ -29,6 +29,7 @@ describe('workspaceSlice', () => {
     const ws = store.getState().workspace;
     expect(ws.markets).toHaveLength(mockMarkets.length);
     expect(ws.strategiesByName['VWAP Bounce']).toBe(5);
+    expect(ws.strategies.some((s) => s.name === 'VWAP Bounce')).toBe(true);
     expect(ws.workspaceLoading).toBe(false);
     expect(ws.selectedMarketId).toBeTruthy();
   });
@@ -80,6 +81,7 @@ describe('workspaceSlice', () => {
       workspace: {
         markets: mockMarkets,
         selectedMarketId: 10,
+        strategies: [{ id: 1, name: 'a' }],
         strategiesByName: { a: 1 },
         workspaceLoading: false,
         workspaceError: null,

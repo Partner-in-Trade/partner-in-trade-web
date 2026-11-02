@@ -3,6 +3,7 @@ import { loadStrategiesByName } from './ensureUserWorkspace';
 import { strategiesApi } from '@/features/strategies/api/strategiesApi';
 
 vi.mock('@/features/strategies/api/strategiesApi', () => ({
+  STRATEGIES_MAX_PAGE_SIZE: 100,
   strategiesApi: {
     getByUser: vi.fn(),
     create: vi.fn(),
