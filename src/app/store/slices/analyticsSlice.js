@@ -7,6 +7,7 @@ const initialState = {
   loading: false,
   error: null,
   marketId: null,
+  currentRequestId: null,
 };
 
 export const fetchMarketAnalytics = createAsyncThunk(
@@ -35,17 +36,23 @@ const analyticsSlice = createSlice({
       .addCase(fetchMarketAnalytics.pending, (state, action) => {
         state.loading = true;
         state.error = null;
+        state.data = null;
         state.marketId = action.meta.arg;
+        state.currentRequestId = action.meta.requestId;
       })
       .addCase(fetchMarketAnalytics.fulfilled, (state, action) => {
+        if (state.currentRequestId !== action.meta.requestId || state.marketId !== action.meta.arg) return;
         state.loading = false;
         state.data = action.payload;
         state.marketId = action.payload.marketId;
+        state.currentRequestId = null;
       })
       .addCase(fetchMarketAnalytics.rejected, (state, action) => {
+        if (state.currentRequestId !== action.meta.requestId) return;
         state.loading = false;
         state.error = action.payload || 'Failed to load analytics';
         state.data = null;
+        state.currentRequestId = null;
       });
   },
 });
