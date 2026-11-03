@@ -49,8 +49,8 @@ export function enrichTrade(trade) {
 
   let outcome = 'BREAKEVEN';
   if (isOpen) outcome = 'OPEN';
-  else if (netPnl > 5) outcome = 'WIN';
-  else if (netPnl < -5) outcome = 'LOSS';
+  else if (netPnl > 0) outcome = 'WIN';
+  else if (netPnl < 0) outcome = 'LOSS';
 
   return {
     ...trade,
@@ -64,38 +64,74 @@ export function enrichTrade(trade) {
 }
 
 export function computePortfolioMetrics(enrichedTrades) {
-  if (!enrichedTrades.length) {
-    return { totalNetPnl: 0, winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0, expectancy: 0, avgRMultiple: 0, winsCount: 0, lossesCount: 0, totalTrades: 0, equityCurve: [], dailySeries: [] };
-  }
-  const sorted = [...enrichedTrades].sort((a, b) => `${a.date} ${a.entryTime}`.localeCompare(`${b.date} ${b.entryTime}`));
-  let totalNetPnl = 0, grossProfit = 0, grossLossAbs = 0, winsCount = 0, lossesCount = 0, totalR = 0, runningEquity = 0;
-  const dailyMap = {}, equityCurve = [];
+  const sorted = [...enrichedTrades].sort((a, b) =>
+    `${a.date} ${a.entryTime}`.localeCompare(`${b.date} ${b.entryTime}`)
+  );
+  const closedTrades = sorted.filter((trade) => !trade.isOpen);
 
-  sorted.forEach((t, idx) => {
-    totalNetPnl += t.netPnl;
-    totalR += t.rMultiple;
-    runningEquity += t.netPnl;
-    if (t.outcome === 'WIN') { winsCount++; grossProfit += t.netPnl; }
-    else if (t.outcome === 'LOSS') { lossesCount++; grossLossAbs += Math.abs(t.netPnl); }
+  let totalNetPnl = 0;
+  let grossProfit = 0;
+  let grossLossAbs = 0;
+  let winsCount = 0;
+  let lossesCount = 0;
+  let breakevenCount = 0;
+  let totalR = 0;
+  let validRCount = 0;
+  let runningEquity = 0;
+  const dailyMap = {};
+  const equityCurve = [];
 
-    if (!dailyMap[t.date]) dailyMap[t.date] = { date: t.date, netPnl: 0, trades: 0, wins: 0 };
-    dailyMap[t.date].netPnl = Number((dailyMap[t.date].netPnl + t.netPnl).toFixed(2));
-    dailyMap[t.date].trades++;
-    if (t.outcome === 'WIN') dailyMap[t.date].wins++;
+  closedTrades.forEach((trade, index) => {
+    const pnl = Number(trade.netPnl) || 0;
+    totalNetPnl += pnl;
+    runningEquity += pnl;
 
-    equityCurve.push({ tradeNumber: idx + 1, date: t.date, symbol: t.symbol, cumulativePnl: Number(runningEquity.toFixed(2)), tradePnl: t.netPnl });
+    if (trade.outcome === 'WIN' || pnl > 0) {
+      winsCount += 1;
+      grossProfit += pnl;
+    } else if (trade.outcome === 'LOSS' || pnl < 0) {
+      lossesCount += 1;
+      grossLossAbs += Math.abs(pnl);
+    } else {
+      breakevenCount += 1;
+    }
+
+    if (Number(trade.initialRiskDollars) > 0 && Number.isFinite(Number(trade.rMultiple))) {
+      totalR += Number(trade.rMultiple);
+      validRCount += 1;
+    }
+
+    if (!dailyMap[trade.date]) {
+      dailyMap[trade.date] = { date: trade.date, netPnl: 0, trades: 0, wins: 0 };
+    }
+    dailyMap[trade.date].netPnl = Number((dailyMap[trade.date].netPnl + pnl).toFixed(2));
+    dailyMap[trade.date].trades += 1;
+    if (trade.outcome === 'WIN' || pnl > 0) dailyMap[trade.date].wins += 1;
+
+    equityCurve.push({
+      tradeNumber: index + 1,
+      date: trade.date,
+      symbol: trade.symbol,
+      cumulativePnl: Number(runningEquity.toFixed(2)),
+      tradePnl: pnl,
+    });
   });
 
-  const totalTrades = sorted.length;
+  const closedTradesCount = closedTrades.length;
   return {
     totalNetPnl: Number(totalNetPnl.toFixed(2)),
-    winRate: Number(((winsCount / totalTrades) * 100).toFixed(1)),
-    profitFactor: grossLossAbs > 0 ? Number((grossProfit / grossLossAbs).toFixed(2)) : 99.9,
+    winRate: closedTradesCount > 0 ? Number(((winsCount / closedTradesCount) * 100).toFixed(1)) : 0,
+    profitFactor: grossLossAbs > 0 ? Number((grossProfit / grossLossAbs).toFixed(2)) : null,
     avgWin: winsCount > 0 ? Number((grossProfit / winsCount).toFixed(2)) : 0,
     avgLoss: lossesCount > 0 ? Number((grossLossAbs / lossesCount).toFixed(2)) : 0,
-    expectancy: Number((totalNetPnl / totalTrades).toFixed(2)),
-    avgRMultiple: Number((totalR / totalTrades).toFixed(2)),
-    winsCount, lossesCount, totalTrades, equityCurve,
+    expectancy: closedTradesCount > 0 ? Number((totalNetPnl / closedTradesCount).toFixed(2)) : 0,
+    avgRMultiple: validRCount > 0 ? Number((totalR / validRCount).toFixed(2)) : 0,
+    winsCount,
+    lossesCount,
+    breakevenCount,
+    totalTrades: sorted.length,
+    closedTradesCount,
+    equityCurve,
     dailySeries: Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date)),
   };
 }
