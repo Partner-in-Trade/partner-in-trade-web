@@ -31,3 +31,12 @@ export const selectJournalError = (state) =>
   selectWorkspaceError(state) || selectTradesError(state);
 
 export const selectActiveTab = (state) => state.ui.activeTab;
+
+ 
+// UI-only ordering; all trade performance metrics remain sourced from the backend.
+export const selectEnrichedTrades = (state) =>
+  [...selectRawTrades(state)].sort((a, b) => {
+    const dateOrder = String(b.date ?? '').localeCompare(String(a.date ?? ''));
+    if (dateOrder !== 0) return dateOrder;
+    return String(b.entryTime ?? '').localeCompare(String(a.entryTime ?? ''));
+  });
