@@ -18,10 +18,10 @@ export const selectIsAddModalOpen = (state) => state.trades.isAddModalOpen;
 export const selectPrefillDate = (state) => state.trades.prefillDate;
 export const selectSelectedTrade = (state) => state.trades.selectedTrade;
 
-export const selectAnalytics = (state) => state.analytics.data;
-export const selectAnalyticsLoading = (state) => state.analytics.loading;
-export const selectAnalyticsError = (state) => state.analytics.error;
-export const selectAnalyticsMarketId = (state) => state.analytics.marketId;
+export const selectAnalytics = (state) => state.analytics?.data ?? null;
+export const selectAnalyticsLoading = (state) => state.analytics?.loading ?? false;
+export const selectAnalyticsError = (state) => state.analytics?.error ?? null;
+export const selectAnalyticsMarketId = (state) => state.analytics?.marketId ?? null;
 
 export const selectSelectedTradeWithPerformance = createSelector(
   [selectSelectedTrade, selectAnalytics],
