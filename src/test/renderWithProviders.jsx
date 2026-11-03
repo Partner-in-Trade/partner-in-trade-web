@@ -5,6 +5,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '@/app/store/slices/authSlice';
 import workspaceReducer from '@/app/store/slices/workspaceSlice';
 import tradesReducer from '@/app/store/slices/tradesSlice';
+import analyticsReducer from '@/app/store/slices/analyticsSlice';
 import uiReducer from '@/app/store/slices/uiSlice';
 import newsReducer from '@/app/store/slices/newsSlice';
 import journalReducer from '@/app/store/slices/journalSlice';
@@ -15,6 +16,7 @@ export function createTestStore(preloadedState) {
       auth: authReducer,
       workspace: workspaceReducer,
       trades: tradesReducer,
+      analytics: analyticsReducer,
       ui: uiReducer,
       news: newsReducer,
       journal: journalReducer,
