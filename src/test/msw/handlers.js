@@ -69,6 +69,28 @@ export const handlers = [
 
   http.delete(`${API_BASE}/trades/:tradeId`, () => HttpResponse.json({ success: true })),
 
+  http.get(`${API_BASE}/analytics/markets/:marketId`, ({ params }) =>
+    HttpResponse.json({
+      marketId: Number(params.marketId),
+      currency: 'USD',
+      totalNetPnl: 100,
+      totalTrades: 1,
+      closedTradesCount: 1,
+      winRate: 100,
+      winsCount: 1,
+      lossesCount: 0,
+      breakevenCount: 0,
+      profitFactor: null,
+      avgWin: 100,
+      avgLoss: 0,
+      expectancy: 100,
+      avgRMultiple: 2,
+      equityCurve: [],
+      dailySeries: [],
+      strategyBreakdown: [],
+    })
+  ),
+
   http.get(`${API_BASE}/news/this-week`, () => HttpResponse.json(mockEconomicEvents)),
 
   http.get(`${API_BASE}/daily-journals`, () => HttpResponse.json([])),
