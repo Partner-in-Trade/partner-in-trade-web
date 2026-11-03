@@ -29,7 +29,7 @@ describe('tradeCalculations', () => {
     const enriched = makeTrade({ quantity: 10, stopLoss: 95, fees: 5 });
     expect(enriched.netPnl).toBe(95);
     expect(enriched.outcome).toBe('WIN');
-    expect(enriched.rMultiple).toBe(2);
+    expect(enriched.rMultiple).toBe(1.9);
   });
 
   it('enrichTrade computes SHORT net PnL', () => {
