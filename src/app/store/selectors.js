@@ -23,6 +23,20 @@ export const selectAnalyticsLoading = (state) => state.analytics.loading;
 export const selectAnalyticsError = (state) => state.analytics.error;
 export const selectAnalyticsMarketId = (state) => state.analytics.marketId;
 
+export const selectSelectedTradeWithPerformance = createSelector(
+  [selectSelectedTrade, selectAnalytics],
+  (trade, analytics) => {
+    if (!trade) return null;
+    const performance = analytics?.tradePerformance?.find((item) => item.tradeId === trade.id);
+    return {
+      ...trade,
+      netPnl: performance?.netPnl ?? null,
+      rMultiple: performance?.rMultiple ?? null,
+      outcome: performance?.outcome ?? (trade.exitPrice === '' ? 'OPEN' : 'UNKNOWN'),
+    };
+  }
+);
+
 export const selectSelectedMarket = (state) =>
   selectMarkets(state).find((market) => market.id === selectSelectedMarketId(state)) ?? null;
 
@@ -36,11 +50,21 @@ export const selectActiveTab = (state) => state.ui.activeTab;
 
 // Sorting is presentation-only; financial metrics remain sourced from the backend.
 export const selectEnrichedTrades = createSelector(
-  [selectRawTrades],
-  (trades) =>
-    [...trades].sort((a, b) => {
+  [selectRawTrades, selectAnalytics],
+  (trades, analytics) => {
+    const performanceById = new Map((analytics?.tradePerformance || []).map((item) => [item.tradeId, item]));
+    return [...trades].map((trade) => {
+      const performance = performanceById.get(trade.id);
+      return {
+        ...trade,
+        netPnl: performance?.netPnl ?? null,
+        rMultiple: performance?.rMultiple ?? null,
+        outcome: performance?.outcome ?? (trade.exitPrice === '' ? 'OPEN' : 'UNKNOWN'),
+      };
+    }).sort((a, b) => {
       const dateOrder = String(b.date ?? '').localeCompare(String(a.date ?? ''));
       if (dateOrder !== 0) return dateOrder;
       return String(b.entryTime ?? '').localeCompare(String(a.entryTime ?? ''));
-    })
+    });
+  }
 );
