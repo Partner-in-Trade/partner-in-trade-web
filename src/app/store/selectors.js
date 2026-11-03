@@ -1,6 +1,3 @@
-import { createSelector } from '@reduxjs/toolkit';
-import { enrichTrade, computePortfolioMetrics } from '@/features/trades/utils/tradeCalculations';
-
 export const selectUser = (state) => state.auth.user;
 export const selectIsAuthenticated = (state) => Boolean(state.auth.user);
 export const selectAuthError = (state) => state.auth.authError;
@@ -12,11 +9,6 @@ export const selectStrategiesByName = (state) => state.workspace.strategiesByNam
 export const selectWorkspaceLoading = (state) => state.workspace.workspaceLoading;
 export const selectWorkspaceError = (state) => state.workspace.workspaceError;
 
-export const selectSelectedMarket = createSelector(
-  [selectMarkets, selectSelectedMarketId],
-  (markets, selectedMarketId) => markets.find((m) => m.id === selectedMarketId) ?? null
-);
-
 export const selectRawTrades = (state) => state.trades.rawTrades;
 export const selectTradesLoading = (state) => state.trades.tradesLoading;
 export const selectTradesError = (state) => state.trades.tradesError;
@@ -24,15 +16,13 @@ export const selectIsAddModalOpen = (state) => state.trades.isAddModalOpen;
 export const selectPrefillDate = (state) => state.trades.prefillDate;
 export const selectSelectedTrade = (state) => state.trades.selectedTrade;
 
-export const selectEnrichedTrades = createSelector([selectRawTrades], (rawTrades) =>
-  rawTrades
-    .map(enrichTrade)
-    .sort((a, b) => `${b.date} ${b.entryTime}`.localeCompare(`${a.date} ${a.entryTime}`))
-);
+export const selectAnalytics = (state) => state.analytics.data;
+export const selectAnalyticsLoading = (state) => state.analytics.loading;
+export const selectAnalyticsError = (state) => state.analytics.error;
+export const selectAnalyticsMarketId = (state) => state.analytics.marketId;
 
-export const selectMetrics = createSelector([selectEnrichedTrades], (trades) =>
-  computePortfolioMetrics(trades)
-);
+export const selectSelectedMarket = (state) =>
+  selectMarkets(state).find((market) => market.id === selectSelectedMarketId(state)) ?? null;
 
 export const selectJournalLoading = (state) =>
   selectWorkspaceLoading(state) || selectTradesLoading(state);
