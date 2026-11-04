@@ -13,7 +13,6 @@ import { assetClassFromMarketType } from '@/constants/markets';
 import { DEFAULT_TIMEFRAME, TIMEFRAMES } from '@/constants/timeframes';
 import { symbolCatalogTypeForMarketType } from '@/data/symbolCatalog';
 import { CURRENCIES, PLAYBOOK_SETUPS, MISTAKE_TAGS } from '@/data/mockTrades';
-import { canCalculateNetPnl, enrichTrade } from '../utils/tradeCalculations';
 import { Toast } from '@/components/ui/Toast';
 import { SymbolAutocomplete } from './SymbolAutocomplete';
 
@@ -109,11 +108,6 @@ function inputClass(extra = '') {
   return `w-full rounded-lg border border-pit-border bg-pit-bg px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${extra}`;
 }
 
-function formatMoney(amount, currency) {
-  const formatted = Number(amount).toFixed(2);
-  return currency === 'INR' ? `₹${formatted}` : `$${formatted}`;
-}
-
 export function TradeEntryModal() {
   const dispatch = useDispatch();
   const isAddModalOpen = useSelector(selectIsAddModalOpen);
@@ -140,11 +134,6 @@ export function TradeEntryModal() {
   }, [markets, form.marketId]);
   const symbolCatalogType = symbolCatalogTypeForMarketType(selectedFormMarket?.type);
 
-  const preview = useMemo(
-    () => enrichTrade(formToTradePayload(form, markets)),
-    [form, markets]
-  );
-
   if (!isAddModalOpen) return null;
 
   const set = (patch) => setForm((prev) => ({ ...prev, ...patch }));
@@ -159,18 +148,10 @@ export function TradeEntryModal() {
     }
   };
 
-  const pnlReady = canCalculateNetPnl(formToTradePayload(form, markets));
-  const netPnlDisplay = pnlReady
-    ? formatMoney(preview.netPnl, form.currency)
-    : form.entryPrice !== '' && form.exitPrice === ''
-      ? 'Open'
-      : '—';
-  const readOnlyNetPnl = netPnlDisplay;
-  const riskDisplay =
-    preview.initialRiskDollars > 0
-      ? formatMoney(preview.initialRiskDollars, form.currency)
-      : '—';
-  const rDisplay = !pnlReady || preview.rMultiple === 0 ? '—' : `${preview.rMultiple}R`;
+  // Trade performance metrics are calculated and returned by the backend, never locally.
+  const netPnlDisplay = 'Calculated after save';
+  const riskDisplay = 'Calculated by backend';
+  const rDisplay = 'Calculated by backend';
 
   return (
     <>
@@ -465,7 +446,7 @@ export function TradeEntryModal() {
                       className={`${inputClass()} font-mono cursor-default border-pit-border/80 bg-pit-card text-slate-200`}
                       aria-readonly="true"
                     >
-                      {readOnlyNetPnl}
+                      {netPnlDisplay}
                     </div>
                   </div>
                 </div>
@@ -475,15 +456,7 @@ export function TradeEntryModal() {
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Net P&L</p>
                   <p
-                    className={`mt-1 text-sm font-bold font-mono ${
-                      !pnlReady
-                        ? form.entryPrice !== '' && form.exitPrice === ''
-                          ? 'text-indigo-300'
-                          : 'text-slate-400'
-                        : preview.netPnl >= 0
-                          ? 'text-pit-profit'
-                          : 'text-pit-loss'
-                    }`}
+                    className="mt-1 text-xs font-medium text-slate-400"
                   >
                     {netPnlDisplay}
                   </p>

@@ -17,8 +17,14 @@ describe('AnalyticsView', () => {
           prefillDate: null,
           selectedTrade: null,
         },
+        analytics: {
+          data: { marketId: 10, closedTradesCount: 2, strategyBreakdown: [], currency: 'USD' },
+          loading: false,
+          error: null,
+          marketId: 10,
+        },
       },
     });
-    expect(screen.getByText(/2 trades/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 closed trades/i)).toBeInTheDocument();
   });
 });

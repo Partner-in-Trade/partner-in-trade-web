@@ -10,6 +10,8 @@ import {
 import { emptyDailyJournalForm, journalFormHasContent, todayIsoDate } from '@/constants/journal';
 import { logout } from './authSlice';
 
+const EMPTY_DAILY_JOURNAL_FORM = emptyDailyJournalForm();
+
 const initialState = {
   summariesByDate: {},
   dailyByDate: {},
@@ -180,7 +182,7 @@ export const selectJournalSelectedDate = (state) => state.journal.selectedDate;
 export const selectJournalMainView = (state) => state.journal.mainView;
 export const selectJournalNavExpanded = (state) => state.journal.journalNavExpanded;
 export const selectDailyJournalForm = (date) => (state) =>
-  state.journal.dailyByDate[date] ?? emptyDailyJournalForm();
+  state.journal.dailyByDate[date] ?? EMPTY_DAILY_JOURNAL_FORM;
 export const selectDailyJournalLoading = (state) => state.journal.dailyLoading;
 export const selectDailyJournalSaving = (state) => state.journal.dailySaving;
 export const selectDailyJournalError = (state) => state.journal.dailyError;
