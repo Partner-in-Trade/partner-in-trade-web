@@ -53,6 +53,8 @@ export function DashboardView({ onNavigate }) {
 
   const currency = analytics?.currency || markets.find((market) => market.id === selectedMarketId)?.currency || 'USD';
   const ready = analytics?.marketId === selectedMarketId;
+  const metricUnavailable = loading ? 'Loading…' : error ? '—' : '—';
+  const metric = (value) => ready ? value : metricUnavailable;
 
   return (
     <div className="space-y-6">
@@ -69,19 +71,19 @@ export function DashboardView({ onNavigate }) {
       {error && <p role="alert" className="text-xs text-rose-400">{error}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-        <KpiCard title="Net P&L" value={formatMoney(analytics?.totalNetPnl, currency)}
-          subtitle={`${analytics?.totalTrades ?? 0} total trades · ${analytics?.closedTradesCount ?? 0} closed`}
-          icon={DollarSign} trend={(analytics?.totalNetPnl ?? 0) >= 0 ? 'positive' : 'negative'} />
-        <KpiCard title="Win Rate" value={`${analytics?.winRate ?? 0}%`}
-          subtitle={`${analytics?.winsCount ?? 0}W / ${analytics?.lossesCount ?? 0}L · ${analytics?.breakevenCount ?? 0} BE`} icon={Percent} />
-        <KpiCard title="Profit Factor" value={analytics?.profitFactor == null ? 'N/A' : analytics.profitFactor}
-          subtitle={analytics?.profitFactor == null ? 'No losing closed trades' : 'Gross profit / gross loss'} icon={Scale} />
-        <KpiCard title="Avg Win / Loss" value={`${formatMoney(analytics?.avgWin, currency)} / ${formatMoney(analytics?.avgLoss, currency)}`}
-          subtitle="Payoff ratio" icon={Activity} />
-        <KpiCard title="Expectancy" value={formatMoney(analytics?.expectancy, currency)}
-          subtitle="Per closed trade" icon={Compass} />
-        <KpiCard title="Avg R-Multiple" value={`${analytics?.avgRMultiple ?? 0}R`}
-          subtitle="Closed trades with valid risk" icon={Award} />
+        <KpiCard title="Net P&L" value={metric(formatMoney(analytics?.totalNetPnl, currency))}
+          subtitle={metric(`${analytics?.totalTrades ?? 0} total trades · ${analytics?.closedTradesCount ?? 0} closed`)}
+          icon={DollarSign} trend={ready && (analytics?.totalNetPnl ?? 0) < 0 ? 'negative' : 'positive'} />
+        <KpiCard title="Win Rate" value={metric(`${analytics?.winRate ?? 0}%`)}
+          subtitle={metric(`${analytics?.winsCount ?? 0}W / ${analytics?.lossesCount ?? 0}L · ${analytics?.breakevenCount ?? 0} BE`)} icon={Percent} />
+        <KpiCard title="Profit Factor" value={metric(analytics?.profitFactor == null ? 'N/A' : analytics.profitFactor)}
+          subtitle={metric(analytics?.profitFactor == null ? 'No losing closed trades' : 'Gross profit / gross loss')} icon={Scale} />
+        <KpiCard title="Avg Win / Loss" value={metric(`${formatMoney(analytics?.avgWin, currency)} / ${formatMoney(analytics?.avgLoss, currency)}`)}
+          subtitle={metric('Payoff ratio')} icon={Activity} />
+        <KpiCard title="Expectancy" value={metric(formatMoney(analytics?.expectancy, currency))}
+          subtitle={metric('Per closed trade')} icon={Compass} />
+        <KpiCard title="Avg R-Multiple" value={metric(`${analytics?.avgRMultiple ?? 0}R`)}
+          subtitle={metric('Closed trades with valid risk')} icon={Award} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
