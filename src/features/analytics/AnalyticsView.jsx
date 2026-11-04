@@ -1,24 +1,16 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from 'react';
+import { useSelector } from 'react-redux';
 import {
-  fetchMarketAnalytics,
   selectAnalytics,
   selectAnalyticsError,
   selectAnalyticsLoading,
-  selectSelectedMarketId,
 } from '@/app/store';
 import { PlaybookBreakdownTable } from './components/PlaybookBreakdownTable';
 
 export function AnalyticsView() {
-  const dispatch = useDispatch();
-  const marketId = useSelector(selectSelectedMarketId);
   const analytics = useSelector(selectAnalytics);
   const loading = useSelector(selectAnalyticsLoading);
   const error = useSelector(selectAnalyticsError);
-
-  useEffect(() => {
-    if (marketId != null) dispatch(fetchMarketAnalytics(marketId));
-  }, [dispatch, marketId]);
 
   return (
     <div className="space-y-6">
