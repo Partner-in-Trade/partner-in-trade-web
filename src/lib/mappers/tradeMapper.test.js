@@ -32,6 +32,21 @@ describe('tradeMapper', () => {
     expect(payload.entryDate).toBe('2025-05-01T09:35:00');
     expect(payload.exitDate).toBe('2025-05-01T10:05:00');
     expect(payload.timeframe).toBe('5m');
+    expect(payload.contractMultiplier).toBe(1);
+  });
+
+  it('uiTradeToApi forwards a custom contract multiplier', () => {
+    const payload = uiTradeToApi({ ...mockUiTrade, contractMultiplier: 10 }, {
+      userId: 1,
+      marketId: 10,
+      marketName: 'Futures',
+      strategyId: 5,
+    });
+    expect(payload.contractMultiplier).toBe(10);
+  });
+
+  it('apiTradeToUi defaults missing contract multiplier to one', () => {
+    expect(apiTradeToUi({ ...mockApiTrade, contractMultiplier: null }).contractMultiplier).toBe(1);
   });
 
   it('uiTradeToApi uses separate exit date when provided', () => {
