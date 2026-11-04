@@ -37,17 +37,13 @@ export function AppEffects() {
   }, [user]);
 
   useEffect(() => {
-    if (user?.id) {
-      dispatch(bootstrapWorkspace());
-    }
+    if (user?.id) dispatch(bootstrapWorkspace());
   }, [dispatch, user?.id]);
 
   useEffect(() => {
     if (workspaceLoading) return;
     dispatch(fetchTrades());
-    if (selectedMarketId != null) {
-      dispatch(fetchMarketAnalytics(selectedMarketId));
-    }
+    if (selectedMarketId != null) dispatch(fetchMarketAnalytics(selectedMarketId));
   }, [dispatch, selectedMarketId, workspaceLoading]);
 
   return null;
