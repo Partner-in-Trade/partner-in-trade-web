@@ -36,6 +36,7 @@ function defaultForm(dateOverride, marketId) {
     entryPrice: '',
     exitPrice: '',
     quantity: '1',
+    contractMultiplier: '1',
     fees: '0',
     stopLoss: '',
     takeProfit: '',
@@ -391,6 +392,23 @@ export function TradeEntryModal() {
                     />
                   </div>
                   <div>
+                    <FieldLabel hint="Contract or point value per unit. Use 1 for stocks and spot assets.">Contract multiplier</FieldLabel>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      min="0.000001"
+                      value={form.contractMultiplier}
+                      onChange={(e) =>
+                        handleMinNumberChange(e.target.value, 0.000001, (v) => set({ contractMultiplier: v }))
+                      }
+                      onBlur={(e) =>
+                        set({ contractMultiplier: enforceMinOnBlur(e.target.value, 0.000001) })
+                      }
+                      className={`${inputClass()} font-mono`}
+                    />
+                  </div>
+                  <div>
                     <FieldLabel hint="Total for the round trip.">Fees and commissions</FieldLabel>
                     <input
                       type="number"
@@ -564,6 +582,7 @@ function formToTradePayload(form, markets) {
     currency: form.currency,
     direction: form.direction,
     quantity: Math.max(1, Number(form.quantity) || 1),
+    contractMultiplier: Math.max(0.000001, Number(form.contractMultiplier) || 1),
     entryPrice: Number(form.entryPrice),
     exitPrice: form.exitPrice === '' ? '' : Number(form.exitPrice),
     stopLoss: form.stopLoss === '' ? '' : Math.max(0, Number(form.stopLoss)),
