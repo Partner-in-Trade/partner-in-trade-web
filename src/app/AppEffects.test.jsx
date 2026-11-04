@@ -2,9 +2,11 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { AppEffects } from './AppEffects';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { mockUser } from '@/test/fixtures';
+import { mockUser, mockMarkets } from '@/test/fixtures';
 import { AUTH_STORAGE_KEY } from '@/lib/mappers/authMapper';
 import * as apiClient from '@/lib/apiClient';
+import * as analyticsApiModule from '@/features/analytics/api/analyticsApi';
+import { setSelectedMarketId } from '@/app/store';
 
 describe('AppEffects', () => {
   afterEach(() => {
@@ -60,5 +62,44 @@ describe('AppEffects', () => {
     await waitFor(() => expect(unauthorizedHandler).toBeTypeOf('function'));
     unauthorizedHandler();
     expect(store.getState().auth.user).toBeNull();
+  });
+
+  it('fetches analytics once when selected market changes', async () => {
+    const getByMarket = vi.spyOn(analyticsApiModule.analyticsApi, 'getByMarket');
+
+    const { store } = renderWithProviders(<AppEffects />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        workspace: {
+          markets: mockMarkets,
+          selectedMarketId: 10,
+          strategiesByName: { 'VWAP Bounce': 5 },
+          workspaceLoading: false,
+          workspaceError: null,
+        },
+        trades: {
+          rawTrades: [],
+          tradesLoading: false,
+          tradesError: null,
+          isAddModalOpen: false,
+          prefillDate: null,
+          selectedTrade: null,
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(store.getState().analytics.data?.marketId).toBe(10);
+    });
+
+    getByMarket.mockClear();
+    store.dispatch(setSelectedMarketId(11));
+
+    await waitFor(() => {
+      expect(store.getState().analytics.data?.marketId).toBe(11);
+    });
+
+    expect(getByMarket).toHaveBeenCalledTimes(1);
+    expect(getByMarket).toHaveBeenCalledWith(11);
   });
 });

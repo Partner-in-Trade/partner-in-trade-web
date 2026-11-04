@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { DollarSign, Percent, Activity, Scale, Compass, Award, PlusCircle } from 'lucide-react';
 import {
-  fetchMarketAnalytics,
   setSelectedMarketId,
   setSelectedTrade,
   selectRawTrades,
@@ -36,10 +35,6 @@ export function DashboardView({ onNavigate }) {
   const error = useSelector(selectAnalyticsError);
   const markets = useSelector(selectMarkets);
   const selectedMarketId = useSelector(selectSelectedMarketId);
-
-  useEffect(() => {
-    if (selectedMarketId != null) dispatch(fetchMarketAnalytics(selectedMarketId));
-  }, [dispatch, selectedMarketId, trades]);
 
   if (markets.length === 0) {
     return (

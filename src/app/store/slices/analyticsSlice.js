@@ -21,6 +21,14 @@ export const fetchMarketAnalytics = createAsyncThunk(
         error.response?.data?.message || error.message || 'Failed to load analytics'
       );
     }
+  },
+  {
+    condition: (marketId, { getState }) => {
+      const { workspace, analytics } = getState();
+      if (workspace.selectedMarketId !== marketId) return false;
+      if (analytics.loading && analytics.marketId === marketId) return false;
+      return true;
+    },
   }
 );
 
