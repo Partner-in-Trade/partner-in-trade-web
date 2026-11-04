@@ -16,6 +16,7 @@ const DEFAULT_CONFIDENCE = 'MEDIUM';
  * @property {string} currency
  * @property {'LONG'|'SHORT'} direction
  * @property {number} quantity
+ * @property {number} [contractMultiplier]
  * @property {number} entryPrice
  * @property {number|string} [exitPrice]
  * @property {number|string} [stopLoss]
@@ -91,6 +92,7 @@ export function apiTradeToUi(apiTrade) {
     currency: apiTrade.currency || 'USD',
     direction: apiTrade.direction,
     quantity: apiTrade.positionSize,
+    contractMultiplier: apiTrade.contractMultiplier ?? 1,
     entryPrice: apiTrade.entryPrice,
     exitPrice:
       apiTrade.status === 'OPEN' || apiTrade.exitPrice == null ? '' : apiTrade.exitPrice,
@@ -132,6 +134,7 @@ export function uiTradeToApi(ui, ctx) {
     entryDate: toLocalDateTime(entryDay, ui.entryTime),
     entryPrice: Number(ui.entryPrice),
     positionSize: Number(ui.quantity),
+    contractMultiplier: Number(ui.contractMultiplier) > 0 ? Number(ui.contractMultiplier) : 1,
     marketId: ctx.marketId,
     marketName: ctx.marketName,
     userId: ctx.userId,
