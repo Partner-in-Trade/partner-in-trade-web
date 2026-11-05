@@ -133,7 +133,7 @@ export function WriteJournalEditor() {
   };
 
   const persistJournal = useCallback(async (manual = false) => {
-    if (savingRef.current || !dirtyRef.current) return;
+    if (savingRef.current || (!manual && !dirtyRef.current)) return;
     const revision = revisionRef.current;
     const formSnapshot = form;
     const uploadsSnapshot = pendingUploads;
@@ -148,6 +148,9 @@ export function WriteJournalEditor() {
         dirtyRef.current = false;
         setPendingUploads({});
         setAutosaveStatus('saved');
+        if (manual) {
+          dispatch(openJournalDayView(journalDate));
+        }
       } else {
         setAutosaveStatus('unsaved');
       }
