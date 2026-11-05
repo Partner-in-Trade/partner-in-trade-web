@@ -17,6 +17,17 @@ describe('tradeMapper', () => {
     expect(ui.setup).toBe('VWAP Bounce');
   });
 
+  it('apiTradeToUi derives performance fields from persisted trade results', () => {
+    const ui = apiTradeToUi({
+      ...mockApiTrade,
+      resultInValue: 100,
+      stopLoss: 95,
+    });
+    expect(ui.netPnl).toBe(100);
+    expect(ui.outcome).toBe('WIN');
+    expect(ui.rMultiple).toBe(2);
+  });
+
   it('uiTradeToApi maps UI trade for create payload', () => {
     const payload = uiTradeToApi(mockUiTrade, {
       userId: 1,

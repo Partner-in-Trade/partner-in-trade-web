@@ -71,6 +71,47 @@ function buildNotes(text, meta) {
   return `${base}${META_MARKER}${JSON.stringify(meta)}`;
 }
 
+function deriveTradeOutcome({ status, exitPrice, netPnl }) {
+  if (status === 'OPEN' || exitPrice === '' || exitPrice == null) return 'OPEN';
+  if (netPnl == null || Number.isNaN(Number(netPnl))) return 'UNKNOWN';
+  const value = Number(netPnl);
+  if (value > 0) return 'WIN';
+  if (value < 0) return 'LOSS';
+  return 'BREAKEVEN';
+}
+
+/** Mirrors backend analytics R calculation when stop loss is set. */
+function deriveRMultiple(trade) {
+  const netPnl = trade.netPnl;
+  if (netPnl == null || Number.isNaN(Number(netPnl))) return null;
+  const stopLoss = trade.stopLoss;
+  if (stopLoss === '' || stopLoss == null) return null;
+
+  const entry = Number(trade.entryPrice);
+  const stop = Number(stopLoss);
+  const quantity = Number(trade.quantity);
+  const multiplier = Number(trade.contractMultiplier) || 1;
+  if (![entry, stop, quantity, multiplier].every(Number.isFinite)) return null;
+
+  const risk = Math.abs(entry - stop) * quantity * multiplier;
+  if (risk <= 0) return null;
+  return Number((Number(netPnl) / risk).toFixed(2));
+}
+
+function attachTradePerformanceFields(trade) {
+  const netPnl = trade.resultInValue ?? null;
+  const withPnl = { ...trade, netPnl };
+  return {
+    ...withPnl,
+    rMultiple: deriveRMultiple(withPnl),
+    outcome: deriveTradeOutcome({
+      status: trade.status,
+      exitPrice: trade.exitPrice,
+      netPnl,
+    }),
+  };
+}
+
 /**
  * @param {Object} apiTrade
  * @returns {UiTradeInput}
@@ -80,7 +121,7 @@ export function apiTradeToUi(apiTrade) {
   const exitParsed = apiTrade.exitDate ? parseDateTime(apiTrade.exitDate) : null;
   const { text, meta } = splitNotes(apiTrade.notes);
 
-  return {
+  return attachTradePerformanceFields({
     id: apiTrade.id,
     status: apiTrade.status || (apiTrade.exitPrice == null ? 'OPEN' : 'CLOSED'),
     date,
@@ -101,6 +142,7 @@ export function apiTradeToUi(apiTrade) {
     takeProfit: apiTrade.takeProfit ?? '',
     fees: apiTrade.fees ?? meta.fees ?? 0,
     resultInPercentage: apiTrade.resultInPercentage ?? null,
+    resultInValue: apiTrade.resultInValue ?? null,
     setup: apiTrade.strategyUsed || meta.setup || 'Unknown',
     strategyId: apiTrade.strategyId,
     marketName: apiTrade.marketName,
@@ -109,7 +151,7 @@ export function apiTradeToUi(apiTrade) {
     notes: text,
     emotion: apiTrade.emotion || 'Focused',
     rating: meta.rating ?? 3,
-  };
+  });
 }
 
 /**

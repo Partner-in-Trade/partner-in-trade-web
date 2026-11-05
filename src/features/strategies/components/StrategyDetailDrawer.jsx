@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectSelectedMarket, setSelectedTrade } from '@/app/store';
 import { OutcomeBadge } from '@/components/ui/OutcomeBadge';
 import { strategiesApi } from '@/features/strategies/api/strategiesApi';
-import { enrichTrade } from '@/features/trades/utils/tradeCalculations';
 import { apiTradeToUi } from '@/lib/mappers/tradeMapper';
 import {
   performanceForStrategy,
@@ -53,7 +52,7 @@ export function StrategyDetailDrawer({ open, strategy, onClose }) {
       .getTrades(strategy.id)
       .then((tradesRes) => {
         if (cancelled) return;
-        const rows = (tradesRes.data || []).map((t) => enrichTrade(apiTradeToUi(t)));
+        const rows = (tradesRes.data || []).map((t) => apiTradeToUi(t));
         setTrades(rows);
       })
       .catch((e) => {
@@ -216,14 +215,20 @@ export function StrategyDetailDrawer({ open, strategy, onClose }) {
                               {t.marketName || '—'}
                             </td>
                             <td className="py-2.5 px-3 text-right font-mono text-xs">
-                              {t.rMultiple}R
+                              {t.rMultiple == null ? '—' : `${Number(t.rMultiple).toFixed(2)}R`}
                             </td>
                             <td
                               className={`py-2.5 px-3 text-right font-mono text-xs font-semibold ${
-                                t.netPnl >= 0 ? 'text-pit-profit' : 'text-pit-loss'
+                                t.netPnl == null
+                                  ? 'text-slate-400'
+                                  : t.netPnl >= 0
+                                    ? 'text-pit-profit'
+                                    : 'text-pit-loss'
                               }`}
                             >
-                              {formatPnl(t.netPnl, t.currency || currency)}
+                              {t.netPnl == null
+                                ? '—'
+                                : formatPnl(t.netPnl, t.currency || currency)}
                             </td>
                             <td className="py-2.5 px-3 text-center">
                               <OutcomeBadge outcome={t.outcome} />
