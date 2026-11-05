@@ -66,7 +66,7 @@ function buildNotes(text, meta) {
   const base = (text || '').trim();
   const hasMeta =
     meta &&
-    (meta.fees != null || meta.mistake != null || meta.rating != null || meta.assetClass);
+    (meta.mistake != null || meta.rating != null || meta.assetClass);
   if (!hasMeta) return base || null;
   return `${base}${META_MARKER}${JSON.stringify(meta)}`;
 }
@@ -121,7 +121,6 @@ export function uiTradeToApi(ui, ctx) {
   const status = hasExit ? 'CLOSED' : 'OPEN';
 
   const meta = {
-    fees: Number(ui.fees) || 0,
     mistake: ui.mistake || 'None',
     rating: ui.rating ?? 3,
     assetClass: ui.assetClass,
