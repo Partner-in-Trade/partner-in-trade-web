@@ -36,7 +36,7 @@ describe('selectors', () => {
   it('selectEnrichedTrades sorts newest date first', () => {
     const trades = selectEnrichedTrades(baseState);
     expect(trades[0].id).toBe('2');
-    expect(trades[0].outcome).toBeDefined();
+    expect(trades.map((trade) => trade.id)).toEqual(['2', '1']);
   });
 
   it('selectJournalLoading and selectJournalError combine workspace and trades', () => {

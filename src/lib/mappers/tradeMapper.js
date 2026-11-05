@@ -16,6 +16,7 @@ const DEFAULT_CONFIDENCE = 'MEDIUM';
  * @property {string} currency
  * @property {'LONG'|'SHORT'} direction
  * @property {number} quantity
+ * @property {number} [contractMultiplier]
  * @property {number} entryPrice
  * @property {number|string} [exitPrice]
  * @property {number|string} [stopLoss]
@@ -65,7 +66,7 @@ function buildNotes(text, meta) {
   const base = (text || '').trim();
   const hasMeta =
     meta &&
-    (meta.fees != null || meta.mistake != null || meta.rating != null || meta.assetClass);
+    (meta.mistake != null || meta.rating != null || meta.assetClass);
   if (!hasMeta) return base || null;
   return `${base}${META_MARKER}${JSON.stringify(meta)}`;
 }
@@ -81,6 +82,7 @@ export function apiTradeToUi(apiTrade) {
 
   return {
     id: apiTrade.id,
+    status: apiTrade.status || (apiTrade.exitPrice == null ? 'OPEN' : 'CLOSED'),
     date,
     entryDate: date,
     exitDate: exitParsed?.date || '',
@@ -91,12 +93,14 @@ export function apiTradeToUi(apiTrade) {
     currency: apiTrade.currency || 'USD',
     direction: apiTrade.direction,
     quantity: apiTrade.positionSize,
+    contractMultiplier: apiTrade.contractMultiplier ?? 1,
     entryPrice: apiTrade.entryPrice,
     exitPrice:
       apiTrade.status === 'OPEN' || apiTrade.exitPrice == null ? '' : apiTrade.exitPrice,
     stopLoss: apiTrade.stopLoss ?? '',
     takeProfit: apiTrade.takeProfit ?? '',
-    fees: meta.fees ?? 0,
+    fees: apiTrade.fees ?? meta.fees ?? 0,
+    resultInPercentage: apiTrade.resultInPercentage ?? null,
     setup: apiTrade.strategyUsed || meta.setup || 'Unknown',
     strategyId: apiTrade.strategyId,
     marketName: apiTrade.marketName,
@@ -119,7 +123,6 @@ export function uiTradeToApi(ui, ctx) {
   const status = hasExit ? 'CLOSED' : 'OPEN';
 
   const meta = {
-    fees: Number(ui.fees) || 0,
     mistake: ui.mistake || 'None',
     rating: ui.rating ?? 3,
     assetClass: ui.assetClass,
@@ -134,6 +137,8 @@ export function uiTradeToApi(ui, ctx) {
     entryDate: toLocalDateTime(entryDay, ui.entryTime),
     entryPrice: Number(ui.entryPrice),
     positionSize: Number(ui.quantity),
+    contractMultiplier: Number(ui.contractMultiplier) > 0 ? Number(ui.contractMultiplier) : 1,
+    fees: Number(ui.fees) >= 0 ? Number(ui.fees) : 0,
     marketId: ctx.marketId,
     marketName: ctx.marketName,
     userId: ctx.userId,
