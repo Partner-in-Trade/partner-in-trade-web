@@ -158,12 +158,12 @@ export function WriteJournalEditor() {
   }, [dispatch, form, journalDate, pendingUploads]);
 
   useEffect(() => {
-    if (!dirtyRef.current || loading) return undefined;
+    if (!dirtyRef.current || loading || saving) return undefined;
     const timer = window.setTimeout(() => {
       persistJournal();
     }, 1500);
     return () => window.clearTimeout(timer);
-  }, [form, pendingUploads, loading, persistJournal]);
+  }, [form, pendingUploads, loading, saving, persistJournal]);
 
   const handleSave = async () => {
     await persistJournal(true);
