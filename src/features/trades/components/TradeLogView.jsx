@@ -39,10 +39,13 @@ export function TradeLogView() {
       <div className="bg-pit-card border border-pit-border rounded-xl p-4">
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search ticker..." className="w-full sm:w-64 px-3 py-2 rounded-lg bg-pit-bg border border-pit-border text-sm text-white" />
       </div>
-      <div className="bg-pit-card border border-pit-border rounded-xl overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="bg-pit-card border border-pit-border rounded-xl overflow-x-auto">
+        <table className="w-full min-w-max text-left text-sm">
           <thead className="bg-pit-bg text-xs uppercase text-slate-400">
-            <tr><th className="py-3 px-4">Date</th><th className="py-3 px-4">Symbol</th><th className="py-3 px-4">Side</th><th className="py-3 px-4">Setup</th><th className="py-3 px-4 text-right">R-Mult</th><th className="py-3 px-4 text-right">Net P&L</th><th className="py-3 px-4 text-center">Status</th><th className="py-3 px-4 text-center">Actions</th></tr>
+            <tr>
+              <th className="py-3 px-4">Date</th><th className="py-3 px-4">Symbol</th><th className="py-3 px-4">Side</th><th className="py-3 px-4">Setup</th>
+              <th className="py-3 px-4 text-right">Entry</th><th className="py-3 px-4 text-right">Exit</th><th className="py-3 px-4 text-right">Qty</th><th className="py-3 px-4 text-right">Multiplier</th><th className="py-3 px-4 text-right">Fees</th><th className="py-3 px-4 text-right">P&L %</th><th className="py-3 px-4 text-right">R-Mult</th><th className="py-3 px-4 text-right">Net P&L</th><th className="py-3 px-4 text-center">Status</th><th className="py-3 px-4 text-center">Actions</th>
+            </tr>
           </thead>
           <tbody className="divide-y divide-pit-border">
             {filtered.map((trade) => (
@@ -51,8 +54,14 @@ export function TradeLogView() {
                 <td className="py-3 px-4 font-bold text-white">{trade.symbol}</td>
                 <td className="py-3 px-4 text-xs">{trade.direction}</td>
                 <td className="py-3 px-4 text-xs">{trade.setup}</td>
-                <td className="py-3 px-4 text-right font-mono text-xs">{trade.rMultiple == null ? '—' : `${Number(trade.rMultiple).toFixed(2)}R`}</td>
-                <td className={`py-3 px-4 text-right font-mono font-semibold ${Number(trade.netPnl) > 0 ? 'text-pit-profit' : Number(trade.netPnl) < 0 ? 'text-pit-loss' : 'text-slate-400'}`}>{formatMoney(trade.netPnl, currency)}</td>
+                <td className="py-3 px-4 text-right font-mono text-xs">{trade.entryPrice ?? '—'}</td>
+                <td className="py-3 px-4 text-right font-mono text-xs">{trade.exitPrice === '' || trade.exitPrice == null ? '—' : trade.exitPrice}</td>
+                <td className="py-3 px-4 text-right font-mono text-xs">{trade.quantity ?? '—'}</td>
+                <td className="py-3 px-4 text-right font-mono text-xs">{trade.contractMultiplier ?? 1}</td>
+                <td className="py-3 px-4 text-right font-mono text-xs">{formatMoney(trade.fees, currency)}</td>
+                <td className="py-3 px-4 text-right font-mono text-xs">{trade.resultInPercentage == null ? '—' : Number(trade.resultInPercentage).toFixed(2) + '%'}</td>
+                <td className="py-3 px-4 text-right font-mono text-xs">{trade.rMultiple == null ? '—' : Number(trade.rMultiple).toFixed(2) + 'R'}</td>
+                <td className={'py-3 px-4 text-right font-mono font-semibold ' + (Number(trade.netPnl) > 0 ? 'text-pit-profit' : Number(trade.netPnl) < 0 ? 'text-pit-loss' : 'text-slate-400')}>{formatMoney(trade.netPnl, currency)}</td>
                 <td className="py-3 px-4 text-center"><OutcomeBadge outcome={trade.outcome} /></td>
                 <td className="py-3 px-4 text-center" onClick={(event) => event.stopPropagation()}>
                   <div className="flex items-center justify-center gap-2">
@@ -66,7 +75,7 @@ export function TradeLogView() {
                     ) : (
                       <button onClick={() => setClosingTradeId(trade.id)} className="text-xs text-pit-profit hover:underline">Close</button>
                     ))}
-                    <button aria-label={`Delete ${trade.symbol}`} className="p-1 hover:text-pit-loss text-slate-400" onClick={() => dispatch(deleteTrade(trade.id)).unwrap().catch((err) => setToast(err || 'Delete failed'))}><Trash2 className="w-4 h-4" /></button>
+                    <button aria-label={'Delete ' + trade.symbol} className="p-1 hover:text-pit-loss text-slate-400" onClick={() => dispatch(deleteTrade(trade.id)).unwrap().catch((err) => setToast(err || 'Delete failed'))}><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </td>
               </tr>
