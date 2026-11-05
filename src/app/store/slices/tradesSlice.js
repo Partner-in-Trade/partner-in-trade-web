@@ -65,6 +65,22 @@ export const addTrade = createAsyncThunk(
   }
 );
 
+export const closeTrade = createAsyncThunk(
+  'trades/closeTrade',
+  async ({ tradeId, exitPrice, closingFees, exitType = 'MANUAL' }, { getState, dispatch, rejectWithValue }) => {
+    try {
+      const payload = { exitPrice: Number(exitPrice), exitType };
+      if (closingFees !== '' && closingFees != null) payload.closingFees = Number(closingFees);
+      const response = await tradesApi.close(tradeId, payload);
+      const marketId = getState().workspace.selectedMarketId;
+      if (marketId != null) dispatch(fetchMarketAnalytics(marketId));
+      return { trade: apiTradeToUi(response.data) };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to close trade');
+    }
+  }
+);
+
 export const deleteTrade = createAsyncThunk(
   'trades/deleteTrade',
   async (tradeId, { getState, dispatch, rejectWithValue }) => {
@@ -114,6 +130,10 @@ const tradesSlice = createSlice({
         state.tradesLoading = false;
         state.tradesError = action.payload || 'Failed to load trades';
         state.rawTrades = [];
+      })
+      .addCase(closeTrade.fulfilled, (state, action) => {
+        const updated = action.payload.trade;
+        state.rawTrades = state.rawTrades.map((trade) => trade.id === updated.id ? updated : trade);
       })
       .addCase(addTrade.fulfilled, (state, action) => {
         if (action.payload.appendToList) state.rawTrades = [action.payload.trade, ...state.rawTrades];
