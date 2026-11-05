@@ -82,6 +82,7 @@ export function apiTradeToUi(apiTrade) {
 
   return {
     id: apiTrade.id,
+    status: apiTrade.status || (apiTrade.exitPrice == null ? 'OPEN' : 'CLOSED'),
     date,
     entryDate: date,
     exitDate: exitParsed?.date || '',
