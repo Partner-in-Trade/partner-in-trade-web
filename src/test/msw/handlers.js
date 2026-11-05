@@ -69,6 +69,21 @@ export const handlers = [
 
   http.delete(`${API_BASE}/trades/:tradeId`, () => HttpResponse.json({ success: true })),
 
+  http.patch(`${API_BASE}/trades/:tradeId/close`, async ({ params, request }) => {
+    const body = await request.json();
+    const closingFees = Number(body.closingFees) || 0;
+    const baseFees = Number(mockApiTrade.fees) || 0;
+    return HttpResponse.json({
+      ...mockApiTrade,
+      id: params.tradeId,
+      status: 'CLOSED',
+      exitPrice: body.exitPrice,
+      exitDate: '2025-05-02T10:00:00',
+      fees: baseFees + closingFees,
+      resultInPercentage: 9,
+    });
+  }),
+
   http.get(`${API_BASE}/analytics/markets/:marketId`, ({ params }) =>
     HttpResponse.json({
       marketId: Number(params.marketId),
@@ -88,6 +103,16 @@ export const handlers = [
       equityCurve: [],
       dailySeries: [],
       strategyBreakdown: [],
+      tradePerformance: [
+        {
+          tradeId: String(mockApiTrade.id),
+          date: '2025-05-01',
+          symbol: mockApiTrade.symbol,
+          netPnl: 100,
+          rMultiple: 2,
+          outcome: 'WIN',
+        },
+      ],
     })
   ),
 

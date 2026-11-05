@@ -27,7 +27,10 @@ export const selectSelectedTradeWithPerformance = createSelector(
   [selectSelectedTrade, selectAnalytics],
   (trade, analytics) => {
     if (!trade) return null;
-    const performance = analytics?.tradePerformance?.find((item) => item.tradeId === trade.id);
+    const performanceById = new Map(
+      (analytics?.tradePerformance || []).map((item) => [String(item.tradeId), item])
+    );
+    const performance = performanceById.get(String(trade.id));
     return {
       ...trade,
       netPnl: performance?.netPnl ?? null,
@@ -52,9 +55,11 @@ export const selectActiveTab = (state) => state.ui.activeTab;
 export const selectEnrichedTrades = createSelector(
   [selectRawTrades, selectAnalytics],
   (trades, analytics) => {
-    const performanceById = new Map((analytics?.tradePerformance || []).map((item) => [item.tradeId, item]));
+    const performanceById = new Map(
+      (analytics?.tradePerformance || []).map((item) => [String(item.tradeId), item])
+    );
     return [...trades].map((trade) => {
-      const performance = performanceById.get(trade.id);
+      const performance = performanceById.get(String(trade.id));
       return {
         ...trade,
         netPnl: performance?.netPnl ?? null,
