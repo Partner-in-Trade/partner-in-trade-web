@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, MoreHorizontal, Newspaper, Trash2, ImagePlus } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -91,6 +91,10 @@ export function WriteJournalEditor() {
   const [form, setForm] = useState(emptyDailyJournalForm());
   const [newsPanelOpen, setNewsPanelOpen] = useState(true);
   const [pendingUploads, setPendingUploads] = useState({});
+  const [autosaveStatus, setAutosaveStatus] = useState('saved');
+  const dirtyRef = useRef(false);
+  const revisionRef = useRef(0);
+  const savingRef = useRef(false);
   const loading = useSelector(selectDailyJournalLoading);
   const saving = useSelector(selectDailyJournalSaving);
   const error = useSelector(selectDailyJournalError);
@@ -110,6 +114,9 @@ export function WriteJournalEditor() {
   }, [journalDate, dispatch]);
 
   useEffect(() => {
+    dirtyRef.current = false;
+    revisionRef.current += 1;
+    setAutosaveStatus('saved');
     setForm(storedForm);
     setPendingUploads({});
   }, [storedForm, journalDate]);
@@ -118,15 +125,48 @@ export function WriteJournalEditor() {
     setPendingUploads((prev) => ({ ...prev, [id]: file }));
   }, []);
 
-  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+  const set = (patch) => {
+    dirtyRef.current = true;
+    revisionRef.current += 1;
+    setAutosaveStatus('unsaved');
+    setForm((f) => ({ ...f, ...patch }));
+  };
+
+  const persistJournal = useCallback(async (manual = false) => {
+    if (savingRef.current || !dirtyRef.current) return;
+    const revision = revisionRef.current;
+    const formSnapshot = form;
+    const uploadsSnapshot = pendingUploads;
+    savingRef.current = true;
+    setAutosaveStatus('saving');
+    const result = await dispatch(
+      saveDailyJournal({ date: journalDate, form: formSnapshot, pendingUploads: uploadsSnapshot })
+    );
+    savingRef.current = false;
+    if (saveDailyJournal.fulfilled.match(result)) {
+      if (revisionRef.current === revision) {
+        dirtyRef.current = false;
+        setPendingUploads({});
+        setAutosaveStatus('saved');
+      } else {
+        setAutosaveStatus('unsaved');
+      }
+    } else {
+      setAutosaveStatus('failed');
+    }
+    return result;
+  }, [dispatch, form, journalDate, pendingUploads]);
+
+  useEffect(() => {
+    if (!dirtyRef.current || loading) return undefined;
+    const timer = window.setTimeout(() => {
+      persistJournal();
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [form, pendingUploads, loading, persistJournal]);
 
   const handleSave = async () => {
-    const result = await dispatch(
-      saveDailyJournal({ date: journalDate, form, pendingUploads })
-    );
-    if (saveDailyJournal.fulfilled.match(result)) {
-      setPendingUploads({});
-    }
+    await persistJournal(true);
   };
 
   const handleScreenshotAdd = (e) => {
@@ -186,6 +226,9 @@ export function WriteJournalEditor() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <span role="status" aria-live="polite" className="text-xs text-slate-400">
+            {autosaveStatus === 'saving' ? 'Autosaving…' : autosaveStatus === 'saved' ? 'All changes saved' : autosaveStatus === 'failed' ? 'Autosave failed — use Save to retry' : 'Unsaved changes'}
+          </span>
           <button
             type="button"
             disabled={saving}
