@@ -5,13 +5,25 @@ import {
   deleteTrade,
   setSelectedTrade,
   selectEnrichedTrades,
+  selectSelectedMarket,
 } from '@/app/store';
 import { OutcomeBadge } from '@/components/ui/OutcomeBadge';
 import { Toast } from '@/components/ui/Toast';
 
+const formatMoney = (value, currency) => {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: currency || 'USD',
+    maximumFractionDigits: 2,
+  }).format(Number(value));
+};
+
 export function TradeLogView() {
   const dispatch = useDispatch();
   const trades = useSelector(selectEnrichedTrades);
+  const selectedMarket = useSelector(selectSelectedMarket);
+  const currency = selectedMarket?.currency || 'USD';
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState('');
   const filtered = trades.filter((trade) =>
@@ -35,8 +47,8 @@ export function TradeLogView() {
                 <td className="py-3 px-4 font-bold text-white">{trade.symbol}</td>
                 <td className="py-3 px-4 text-xs">{trade.direction}</td>
                 <td className="py-3 px-4 text-xs">{trade.setup}</td>
-                <td className="py-3 px-4 text-right font-mono text-xs">—</td>
-                <td className="py-3 px-4 text-right font-mono font-semibold text-slate-400">—</td>
+                <td className="py-3 px-4 text-right font-mono text-xs">{trade.rMultiple == null ? '—' : `${Number(trade.rMultiple).toFixed(2)}R`}</td>
+                <td className={`py-3 px-4 text-right font-mono font-semibold ${Number(trade.netPnl) > 0 ? 'text-pit-profit' : Number(trade.netPnl) < 0 ? 'text-pit-loss' : 'text-slate-400'}`}>{formatMoney(trade.netPnl, currency)}</td>
                 <td className="py-3 px-4 text-center"><OutcomeBadge outcome={trade.outcome} /></td>
                 <td className="py-3 px-4 text-center" onClick={(event) => { event.stopPropagation(); dispatch(deleteTrade(trade.id)).unwrap().catch((err) => setToast(err || 'Delete failed')); }}><button className="p-1 hover:text-pit-loss text-slate-400"><Trash2 className="w-4 h-4" /></button></td>
               </tr>
