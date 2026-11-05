@@ -11,7 +11,7 @@ export function TopHeader({ activeTab }) {
     calendar: 'Monthly P&L Calendar',
     journal: 'Trading Journal',
     tradelog: 'Manual Trade Execution Log',
-    analytics: 'Playbooks, Edge & Mistake Analytics',
+    strategies: 'Strategies',
     markets: 'Markets & Capital',
     'news-calendar': 'Economic News Calendar',
   };

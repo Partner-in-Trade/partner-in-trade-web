@@ -4,8 +4,8 @@ import {
   LayoutDashboard,
   Calendar as CalendarIcon,
   Table2,
-  BarChart3,
   Wallet,
+  Target,
   PlusCircle,
   RotateCcw,
   TrendingUp,
@@ -37,7 +37,7 @@ const NAV_ITEMS = [
   { id: 'calendar', label: 'P&L Calendar', icon: CalendarIcon },
   { id: 'journal', label: 'Journal', icon: BookOpen, expandable: true },
   { id: 'tradelog', label: 'Trade Log', icon: Table2 },
-  { id: 'analytics', label: 'Playbooks & Edge', icon: BarChart3 },
+  { id: 'strategies', label: 'Strategies', icon: Target },
   { id: 'markets', label: 'Markets', icon: Wallet },
   { id: 'news-calendar', label: 'News Calendar', icon: Newspaper },
 ];

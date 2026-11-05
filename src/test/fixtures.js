@@ -42,6 +42,9 @@ export const mockApiTrade = {
   stopLoss: 95,
   status: 'CLOSED',
   strategyUsed: 'VWAP Bounce',
+  strategyId: 5,
+  marketId: 10,
+  marketName: 'My FX account',
   timeframe: '5m',
   notes: 'Test note',
   emotion: 'Focused',
@@ -82,8 +85,11 @@ export function loginSuccessResponse(email = 'test@example.com') {
   };
 }
 
-export function strategiesListResponse(strategies = [{ id: 5, name: 'VWAP Bounce' }]) {
-  return { strategies, totalElements: strategies.length };
+export function strategiesListResponse(strategies = [{ id: 5, name: 'VWAP Bounce', description: 'Mean reversion', tags: ['VWAP'] }]) {
+  return {
+    strategies,
+    pageable: { pageNumber: 0, pageSize: 100, total: strategies.length },
+  };
 }
 
 export const mockEconomicEvents = [

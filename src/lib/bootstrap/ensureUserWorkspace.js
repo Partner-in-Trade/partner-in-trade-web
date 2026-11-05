@@ -1,34 +1,45 @@
-import { PLAYBOOK_SETUPS } from '@/data/mockTrades';
-import { strategiesApi } from '@/features/strategies/api/strategiesApi';
+import {
+  strategiesApi,
+  STRATEGIES_MAX_PAGE_SIZE,
+} from '@/features/strategies/api/strategiesApi';
 
-const STRATEGY_TYPE = 'Playbook';
-const STRATEGY_TIMEFRAME = '5m';
+function strategiesByNameFromList(strategies) {
+  const strategiesByName = {};
+  for (const s of strategies) {
+    if (s?.name && s.id != null) {
+      strategiesByName[s.name] = s.id;
+    }
+  }
+  return strategiesByName;
+}
 
 /**
- * Seeds playbook strategies for the user if missing.
+ * Loads the user's strategies from the API (single fetch for bootstrap + strategies UI).
+ * @param {number} userId
+ * @returns {Promise<{ strategies: object[], strategiesByName: Record<string, number> }>}
+ */
+export async function fetchUserStrategies(userId, search) {
+  const stratRes = await strategiesApi.getByUser(
+    userId,
+    0,
+    STRATEGIES_MAX_PAGE_SIZE,
+    search
+  );
+  const strategies = stratRes.data?.strategies || [];
+  return {
+    strategies,
+    strategiesByName: strategiesByNameFromList(strategies),
+  };
+}
+
+/**
  * @param {number} userId
  * @returns {Promise<Record<string, number>>}
  */
-export async function ensureStrategies(userId) {
-  const stratRes = await strategiesApi.getByUser(userId, 0, 100);
-  const existing = stratRes.data?.strategies || [];
-  const strategiesByName = {};
-  for (const s of existing) {
-    strategiesByName[s.name] = s.id;
-  }
-
-  for (const name of PLAYBOOK_SETUPS) {
-    if (strategiesByName[name]) continue;
-    const created = await strategiesApi.create({
-      name,
-      type: STRATEGY_TYPE,
-      timeframe: STRATEGY_TIMEFRAME,
-      userId,
-      tags: [],
-      description: '',
-    });
-    strategiesByName[created.data.name] = created.data.id;
-  }
-
+export async function loadStrategiesByName(userId) {
+  const { strategiesByName } = await fetchUserStrategies(userId);
   return strategiesByName;
 }
+
+/** @deprecated use loadStrategiesByName */
+export const ensureStrategies = loadStrategiesByName;

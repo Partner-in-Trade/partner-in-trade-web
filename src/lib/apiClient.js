@@ -2,12 +2,14 @@ import axios from 'axios';
 
 const JWT_STORAGE_KEY = 'pit_jwt';
 
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 90_000;
+
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: API_TIMEOUT_MS,
 });
 
 let onUnauthorized = null;

@@ -17,6 +17,17 @@ describe('tradeMapper', () => {
     expect(ui.setup).toBe('VWAP Bounce');
   });
 
+  it('apiTradeToUi derives performance fields from persisted trade results', () => {
+    const ui = apiTradeToUi({
+      ...mockApiTrade,
+      resultInValue: 100,
+      stopLoss: 95,
+    });
+    expect(ui.netPnl).toBe(100);
+    expect(ui.outcome).toBe('WIN');
+    expect(ui.rMultiple).toBe(2);
+  });
+
   it('uiTradeToApi maps UI trade for create payload', () => {
     const payload = uiTradeToApi(mockUiTrade, {
       userId: 1,
@@ -78,10 +89,10 @@ describe('tradeMapper', () => {
     expect(payload.timeframe).toBe('15m');
   });
 
-  it('resolveStrategyId prefers setup name then falls back', () => {
+  it('resolveStrategyId matches setup name exactly', () => {
     const map = { 'VWAP Bounce': 5, 'Gap & Go': 6 };
     expect(resolveStrategyId(map, 'VWAP Bounce')).toBe(5);
-    expect(resolveStrategyId(map, 'Unknown')).toBe(5);
+    expect(resolveStrategyId(map, 'Unknown')).toBeNull();
     expect(resolveStrategyId({}, 'x')).toBeNull();
   });
 

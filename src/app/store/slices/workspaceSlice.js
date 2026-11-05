@@ -5,7 +5,7 @@ import {
   saveMarketType,
   withMarketTypes,
 } from '@/features/markets/marketTypeStore';
-import { ensureStrategies } from '@/lib/bootstrap/ensureUserWorkspace';
+import { fetchUserStrategies } from '@/lib/bootstrap/ensureUserWorkspace';
 import { logout } from './authSlice';
 
 const SELECTED_MARKET_KEY = 'pit_selected_market_id';
@@ -18,7 +18,14 @@ function loadInitialSelectedMarketId() {
 const initialWorkspaceState = {
   markets: [],
   selectedMarketId: loadInitialSelectedMarketId(),
+  strategies: [],
   strategiesByName: {},
+  strategiesSearch: '',
+  strategiesLoadedSearch: '',
+  strategiesInFlightSearch: null,
+  strategiesLatestRequestId: null,
+  strategiesLoading: false,
+  strategiesError: null,
   workspaceLoading: false,
   workspaceError: null,
 };
@@ -30,18 +37,54 @@ export const bootstrapWorkspace = createAsyncThunk(
     if (!user?.id) return rejectWithValue('Not signed in');
     const userId = Number(user.id);
     try {
-      const [marketList, strategyMap] = await Promise.all([
+      const [marketList, strategyPayload] = await Promise.all([
         marketsApi
           .getMarkets(userId)
           .then((res) => withMarketTypes(res.data || [])),
-        ensureStrategies(userId),
+        fetchUserStrategies(userId),
       ]);
-      return { marketList, strategyMap };
+      return {
+        marketList,
+        strategies: strategyPayload.strategies,
+        strategyMap: strategyPayload.strategiesByName,
+      };
     } catch (e) {
       return rejectWithValue(
         e.response?.data?.message || e.message || 'Failed to load account data'
       );
     }
+  }
+);
+
+export const fetchStrategies = createAsyncThunk(
+  'workspace/fetchStrategies',
+  async (search, { getState, rejectWithValue }) => {
+    const user = getState().auth.user;
+    if (!user?.id) return rejectWithValue('Not signed in');
+    const searchQuery = typeof search === 'string' ? search.trim() : '';
+    try {
+      const payload = await fetchUserStrategies(
+        Number(user.id),
+        searchQuery || undefined
+      );
+      return { ...payload, searchQuery };
+    } catch (e) {
+      return rejectWithValue(
+        e.response?.data?.message || e.message || 'Failed to load strategies'
+      );
+    }
+  },
+  {
+    condition: (search, { getState }) => {
+      const q = typeof search === 'string' ? search.trim() : '';
+      const { strategiesLoadedSearch, strategiesLoading, strategiesInFlightSearch } =
+        getState().workspace;
+      if (q === strategiesLoadedSearch) return false;
+      if (strategiesLoading && q === strategiesInFlightSearch) {
+        return false;
+      }
+      return true;
+    },
   }
 );
 
@@ -125,6 +168,23 @@ const workspaceSlice = createSlice({
         selectedMarketId: null,
       };
     },
+    registerStrategyInWorkspace(state, action) {
+      const strategy = action.payload;
+      if (!strategy || strategy.id == null) return;
+      const { name, id } = strategy;
+      if (name) {
+        state.strategiesByName[name] = id;
+      }
+      const idx = state.strategies.findIndex((s) => s.id === id);
+      if (idx >= 0) {
+        state.strategies[idx] = { ...state.strategies[idx], ...strategy };
+      } else {
+        state.strategies.push(strategy);
+      }
+    },
+    setStrategiesSearch(state, action) {
+      state.strategiesSearch = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -137,10 +197,16 @@ const workspaceSlice = createSlice({
         state.workspaceError = null;
       })
       .addCase(bootstrapWorkspace.fulfilled, (state, action) => {
-        const { marketList, strategyMap } = action.payload;
+        const { marketList, strategies, strategyMap } = action.payload;
         state.workspaceLoading = false;
         state.markets = marketList;
+        state.strategies = strategies;
         state.strategiesByName = strategyMap;
+        state.strategiesLoadedSearch = '';
+        state.strategiesSearch = '';
+        state.strategiesInFlightSearch = null;
+        state.strategiesLatestRequestId = null;
+        state.strategiesError = null;
 
         if (marketList.length === 0) {
           state.selectedMarketId = null;
@@ -160,7 +226,13 @@ const workspaceSlice = createSlice({
         state.workspaceLoading = false;
         state.workspaceError = action.payload || 'Failed to load account data';
         state.markets = [];
+        state.strategies = [];
         state.strategiesByName = {};
+        state.strategiesSearch = '';
+        state.strategiesLoadedSearch = '';
+        state.strategiesInFlightSearch = null;
+        state.strategiesLatestRequestId = null;
+        state.strategiesError = null;
         state.selectedMarketId = null;
         localStorage.removeItem(SELECTED_MARKET_KEY);
       })
@@ -187,9 +259,43 @@ const workspaceSlice = createSlice({
             localStorage.removeItem(SELECTED_MARKET_KEY);
           }
         }
+      })
+      .addCase(fetchStrategies.pending, (state, action) => {
+        const searchQuery =
+          typeof action.meta.arg === 'string' ? action.meta.arg.trim() : '';
+        state.strategiesLoading = true;
+        state.strategiesError = null;
+        state.strategiesInFlightSearch = searchQuery;
+        state.strategiesLatestRequestId = action.meta.requestId;
+      })
+      .addCase(fetchStrategies.fulfilled, (state, action) => {
+        if (action.meta.requestId !== state.strategiesLatestRequestId) {
+          return;
+        }
+        const { strategies, strategiesByName, searchQuery } = action.payload;
+        state.strategiesLoading = false;
+        state.strategiesInFlightSearch = null;
+        state.strategies = strategies;
+        state.strategiesLoadedSearch = searchQuery;
+        if (searchQuery === '') {
+          state.strategiesByName = strategiesByName;
+        }
+      })
+      .addCase(fetchStrategies.rejected, (state, action) => {
+        if (action.meta.requestId !== state.strategiesLatestRequestId) {
+          return;
+        }
+        state.strategiesLoading = false;
+        state.strategiesInFlightSearch = null;
+        state.strategiesError = action.payload || 'Failed to load strategies';
       });
   },
 });
 
-export const { setSelectedMarketId, resetWorkspace } = workspaceSlice.actions;
+export const {
+  setSelectedMarketId,
+  resetWorkspace,
+  registerStrategyInWorkspace,
+  setStrategiesSearch,
+} = workspaceSlice.actions;
 export default workspaceSlice.reducer;
