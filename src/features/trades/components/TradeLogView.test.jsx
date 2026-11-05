@@ -25,6 +25,46 @@ describe('TradeLogView', () => {
     expect(screen.getByText('AAPL')).toBeInTheDocument();
   });
 
+  it('shows enriched net pnl and r-multiple from analytics', () => {
+    renderWithProviders(<TradeLogView />, {
+      preloadedState: {
+        workspace: {
+          markets: [{ id: 10, name: 'FX', currency: 'USD', funds: 1000 }],
+          selectedMarketId: 10,
+          strategiesByName: {},
+          workspaceLoading: false,
+          workspaceError: null,
+        },
+        trades: {
+          rawTrades: [uiTrade],
+          tradesLoading: false,
+          tradesError: null,
+          isAddModalOpen: false,
+          prefillDate: null,
+          selectedTrade: null,
+        },
+        analytics: {
+          data: {
+            marketId: 10,
+            tradePerformance: [
+              {
+                tradeId: String(uiTrade.id),
+                netPnl: 42.5,
+                rMultiple: 1.25,
+                outcome: 'WIN',
+              },
+            ],
+          },
+          loading: false,
+          error: null,
+          marketId: 10,
+        },
+      },
+    });
+    expect(screen.getByText('1.25R')).toBeInTheDocument();
+    expect(screen.getByText('$42.50')).toBeInTheDocument();
+  });
+
   it('delete removes trade from store', async () => {
     const user = userEvent.setup();
     const { store } = renderWithProviders(<TradeLogView />, {
@@ -40,7 +80,7 @@ describe('TradeLogView', () => {
       },
     });
     const row = screen.getByText('AAPL').closest('tr');
-    await user.click(row.querySelector('button'));
+    await user.click(screen.getByRole('button', { name: 'Delete AAPL' }));
     await waitFor(() => {
       expect(store.getState().trades.rawTrades).toHaveLength(0);
     });

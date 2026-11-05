@@ -84,4 +84,25 @@ describe('tradeMapper', () => {
     expect(resolveStrategyId(map, 'Unknown')).toBe(5);
     expect(resolveStrategyId({}, 'x')).toBeNull();
   });
+
+  it('uiTradeToApi sends fees on payload and omits fees from notes meta', () => {
+    const payload = uiTradeToApi({ ...mockUiTrade, fees: 4.5, notes: 'Journal note' }, {
+      userId: 1,
+      marketId: 10,
+      marketName: 'Forex',
+      strategyId: 5,
+    });
+    expect(payload.fees).toBe(4.5);
+    expect(payload.notes).toContain('Journal note');
+    expect(payload.notes).not.toMatch(/"fees"\s*:/);
+  });
+
+  it('apiTradeToUi reads legacy fees from notes meta when API fees absent', () => {
+    const ui = apiTradeToUi({
+      ...mockApiTrade,
+      fees: undefined,
+      notes: 'Plain\n---meta---\n{"fees":3.25,"mistake":"None","rating":3}',
+    });
+    expect(ui.fees).toBe(3.25);
+  });
 });

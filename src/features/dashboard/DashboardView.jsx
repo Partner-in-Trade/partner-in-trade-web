@@ -77,7 +77,7 @@ export function DashboardView({ onNavigate }) {
         <KpiCard title="Win Rate" value={metric(`${analytics?.winRate ?? 0}%`)}
           subtitle={metric(`${analytics?.winsCount ?? 0}W / ${analytics?.lossesCount ?? 0}L · ${analytics?.breakevenCount ?? 0} BE`)} icon={Percent} />
         <KpiCard title="Profit Factor" value={metric(analytics?.profitFactor == null ? 'N/A' : analytics.profitFactor)}
-          subtitle={metric(analytics?.profitFactor == null ? 'No losing closed trades' : 'Gross profit / gross loss')} icon={Scale} />
+          subtitle={metric(analytics?.profitFactor == null ? 'No losing closed trades' : 'Net profit / net loss after fees')} icon={Scale} />
         <KpiCard title="Avg Win / Loss" value={metric(`${formatMoney(analytics?.avgWin, currency)} / ${formatMoney(analytics?.avgLoss, currency)}`)}
           subtitle={metric('Payoff ratio')} icon={Activity} />
         <KpiCard title="Expectancy" value={metric(formatMoney(analytics?.expectancy, currency))}

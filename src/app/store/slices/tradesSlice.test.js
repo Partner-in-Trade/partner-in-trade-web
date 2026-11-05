@@ -1,14 +1,17 @@
 import { describe, it, expect } from 'vitest';
+import { waitFor } from '@testing-library/react';
 import { createTestStore } from '@/test/renderWithProviders';
 import {
   fetchTrades,
   addTrade,
   deleteTrade,
+  closeTrade,
   openAddTradeModal,
   setSelectedTrade,
 } from './tradesSlice';
+import { apiTradeToUi } from '@/lib/mappers/tradeMapper';
 import { logout } from './authSlice';
-import { mockUser, mockMarkets, mockUiTrade } from '@/test/fixtures';
+import { mockUser, mockMarkets, mockUiTrade, mockApiTrade } from '@/test/fixtures';
 
 describe('tradesSlice', () => {
   function storeWithMarket() {
@@ -49,6 +52,41 @@ describe('tradesSlice', () => {
     const store = storeWithMarket();
     await store.dispatch(addTrade({ ...mockUiTrade, symbol: 'TSLA' }));
     expect(store.getState().trades.rawTrades[0].symbol).toBe('TSLA');
+  });
+
+  it('closeTrade updates trade and refreshes analytics', async () => {
+    const openTrade = apiTradeToUi({
+      ...mockApiTrade,
+      id: 'open-trade-1',
+      status: 'OPEN',
+      exitPrice: null,
+      exitDate: null,
+    });
+    const store = createTestStore({
+      auth: { user: mockUser, authError: null, authLoading: false },
+      workspace: {
+        markets: mockMarkets,
+        selectedMarketId: 10,
+        strategiesByName: { 'VWAP Bounce': 5 },
+        workspaceLoading: false,
+        workspaceError: null,
+      },
+      trades: {
+        rawTrades: [openTrade],
+        tradesLoading: false,
+        tradesError: null,
+        isAddModalOpen: false,
+        prefillDate: null,
+        selectedTrade: null,
+      },
+    });
+    await store.dispatch(closeTrade({ tradeId: 'open-trade-1', exitPrice: 105, closingFees: 1 }));
+    const updated = store.getState().trades.rawTrades.find((t) => t.id === 'open-trade-1');
+    expect(updated?.status).toBe('CLOSED');
+    expect(updated?.exitPrice).toBe(105);
+    await waitFor(() => {
+      expect(store.getState().analytics.data?.marketId).toBe(10);
+    });
   });
 
   it('deleteTrade removes trade and clears selection when needed', async () => {
