@@ -31,7 +31,7 @@ describe('App', () => {
         },
       },
     });
-    expect(screen.getByText('Partner in Trade')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Partner in Trade logo' })).toBeInTheDocument();
     expect(screen.getByText('Performance Overview')).toBeInTheDocument();
   });
 });
