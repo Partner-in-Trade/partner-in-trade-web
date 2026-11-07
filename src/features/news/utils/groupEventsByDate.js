@@ -1,6 +1,8 @@
+import { normalizeEventDateIso } from './normalizeNewsEvent';
+
 /**
  * Groups events by eventDate, preserving API sort order within each day.
- * @param {Array<{ eventDate: string }>} events
+ * @param {Array<{ eventDate?: string, event_date?: unknown }>} events
  * @returns {Array<{ date: string, events: typeof events }>}
  */
 export function groupEventsByDate(events) {
@@ -11,15 +13,16 @@ export function groupEventsByDate(events) {
   let currentEvents = [];
 
   for (const event of events) {
-    const date = event.eventDate;
+    const date = normalizeEventDateIso(event.eventDate ?? event.event_date);
+    if (!date) continue;
     if (date !== currentDate) {
       if (currentDate !== null) {
         groups.push({ date: currentDate, events: currentEvents });
       }
       currentDate = date;
-      currentEvents = [event];
+      currentEvents = [{ ...event, eventDate: date }];
     } else {
-      currentEvents.push(event);
+      currentEvents.push({ ...event, eventDate: date });
     }
   }
 

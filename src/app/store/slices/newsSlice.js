@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { newsApi } from '@/features/news/api/newsApi';
+import { normalizeNewsEvents } from '@/features/news/utils/normalizeNewsEvent';
 import { logout } from './authSlice';
 
 const initialNewsState = {
@@ -14,7 +15,7 @@ export const fetchThisWeekNews = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await newsApi.getThisWeek();
-      return { events: res.data || [] };
+      return { events: normalizeNewsEvents(res.data) };
     } catch (e) {
       return rejectWithValue(
         e.response?.data?.message || e.message || 'Failed to load news calendar'

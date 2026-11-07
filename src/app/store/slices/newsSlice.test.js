@@ -19,8 +19,35 @@ describe('newsSlice', () => {
     expect(news.loading).toBe(false);
     expect(news.events).toHaveLength(mockEconomicEvents.length);
     expect(news.events[0].eventName).toBe('CPI m/m');
+    expect(news.events[0].eventDate).toBe('2026-10-20');
     expect(news.fetchedAt).toBeTruthy();
     expect(news.error).toBeNull();
+  });
+
+  it('fetchThisWeekNews normalizes Jackson-style date arrays', async () => {
+    server.use(
+      http.get(`${API_BASE}/news/this-week`, () =>
+        HttpResponse.json([
+          {
+            id: 'arr-1',
+            eventDate: [2026, 11, 6],
+            eventTime: [10, 30, 0],
+            currency: 'USD',
+            eventName: 'Array Date Event',
+            impact: 'HIGH',
+          },
+        ])
+      )
+    );
+
+    const store = createTestStore({
+      auth: { user: mockUser, authError: null, authLoading: false },
+    });
+    await store.dispatch(fetchThisWeekNews());
+
+    const { news } = store.getState();
+    expect(news.events[0].eventDate).toBe('2026-11-06');
+    expect(news.events[0].eventTime).toBe('10:30:00');
   });
 
   it('fetchThisWeekNews does not call API when already fetched', async () => {
