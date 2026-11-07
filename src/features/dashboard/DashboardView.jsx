@@ -27,6 +27,11 @@ function formatMoney(value, currency) {
   return `${symbol}${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function formatProfitFactor(value) {
+  if (value == null || value === '' || Number.isNaN(Number(value))) return 0;
+  return value;
+}
+
 export function DashboardView({ onNavigate }) {
   const dispatch = useDispatch();
   const trades = useSelector(selectRawTrades);
@@ -76,8 +81,16 @@ export function DashboardView({ onNavigate }) {
           icon={DollarSign} trend={ready && (analytics?.totalNetPnl ?? 0) < 0 ? 'negative' : 'positive'} />
         <KpiCard title="Win Rate" value={metric(`${analytics?.winRate ?? 0}%`)}
           subtitle={metric(`${analytics?.winsCount ?? 0}W / ${analytics?.lossesCount ?? 0}L · ${analytics?.breakevenCount ?? 0} BE`)} icon={Percent} />
-        <KpiCard title="Profit Factor" value={metric(analytics?.profitFactor == null ? 'N/A' : analytics.profitFactor)}
-          subtitle={metric(analytics?.profitFactor == null ? 'No losing closed trades' : 'Net profit / net loss after fees')} icon={Scale} />
+        <KpiCard
+          title="Profit Factor"
+          value={metric(formatProfitFactor(analytics?.profitFactor))}
+          subtitle={metric(
+            formatProfitFactor(analytics?.profitFactor) === 0
+              ? 'No losing closed trades'
+              : 'Net profit / net loss after fees'
+          )}
+          icon={Scale}
+        />
         <KpiCard title="Avg Win / Loss" value={metric(`${formatMoney(analytics?.avgWin, currency)} / ${formatMoney(analytics?.avgLoss, currency)}`)}
           subtitle={metric('Payoff ratio')} icon={Activity} />
         <KpiCard title="Expectancy" value={metric(formatMoney(analytics?.expectancy, currency))}

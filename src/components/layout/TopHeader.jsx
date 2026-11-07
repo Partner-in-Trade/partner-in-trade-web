@@ -46,7 +46,9 @@ export function TopHeader({ activeTab }) {
         <div className="h-4 w-px bg-slate-800" />
         <div className="flex items-center gap-2">
           <span className="text-slate-400">Profit Factor:</span>
-          <span className="font-mono font-semibold text-slate-200">{profitFactor == null ? '—' : profitFactor}</span>
+          <span className="font-mono font-semibold text-slate-200">
+            {profitFactor == null || profitFactor === '' ? 0 : profitFactor}
+          </span>
         </div>
       </div>
     </header>
