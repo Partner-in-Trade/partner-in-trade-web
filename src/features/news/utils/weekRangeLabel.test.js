@@ -3,12 +3,17 @@ import {
   formatEventDateHeader,
   formatEventTime,
   formatValue,
+  formatNewsMonthDay,
   getThisWeekRangeLabel,
 } from './weekRangeLabel';
 
 describe('weekRangeLabel', () => {
-  it('formatEventDateHeader includes weekday and date', () => {
-    expect(formatEventDateHeader('2026-10-20')).toMatch(/Tuesday · Oct 20, 2026/);
+  it('formatEventDateHeader uses long weekday and month title', () => {
+    expect(formatEventDateHeader('2026-10-20')).toMatch(/Tuesday, October 20/);
+  });
+
+  it('formatNewsMonthDay uses long month and day', () => {
+    expect(formatNewsMonthDay('2026-11-02')).toBe('November 2');
   });
 
   it('formatEventTime strips seconds', () => {

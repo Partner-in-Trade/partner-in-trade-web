@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchThisWeekNews,
@@ -6,17 +6,26 @@ import {
   selectNewsLoading,
   selectNewsError,
   selectNewsFetchedAt,
+  setActiveTab,
 } from '@/app/store';
+import { openWriteJournal } from '@/app/store/slices/journalSlice';
 import { groupEventsByDate } from '@/features/news/utils/groupEventsByDate';
+import { normalizeNewsEvents } from '@/features/news/utils/normalizeNewsEvent';
+import { NewsDayHeader } from '@/features/news/components/NewsDayHeader';
+import { NewsTimeline } from '@/features/news/components/NewsTimeline';
+import { NewsSideRail } from '@/features/news/components/NewsSideRail';
 import {
-  formatEventDateHeader,
-  formatEventTime,
-  formatValue,
-  getThisWeekRangeLabel,
-} from '@/features/news/utils/weekRangeLabel';
-import { ImpactBadge } from '@/features/news/components/ImpactBadge';
-
-const COL_COUNT = 7;
+  buildJournalPrompt,
+  buildWeekDayRows,
+  countCurrencies,
+  filterEventsByImpact,
+  getTodayIsoInNewsTz,
+  getWeekBoundsFromEvents,
+  groupEventsByTimeSlot,
+  resolveSelectedNewsDay,
+  summarizeDay,
+} from '@/features/news/utils/newsDayTimeline';
+import { formatWeekRangeLabelFromIso, getThisWeekRangeLabel } from '@/features/news/utils/weekRangeLabel';
 
 export function NewsCalendarView() {
   const dispatch = useDispatch();
@@ -24,8 +33,61 @@ export function NewsCalendarView() {
   const loading = useSelector(selectNewsLoading);
   const error = useSelector(selectNewsError);
   const fetchedAt = useSelector(selectNewsFetchedAt);
-  const grouped = groupEventsByDate(events);
-  const weekLabel = getThisWeekRangeLabel();
+
+  const todayIso = useMemo(() => getTodayIsoInNewsTz(), []);
+
+  const normalizedEvents = useMemo(() => normalizeNewsEvents(events), [events]);
+
+  const [selectedDay, setSelectedDay] = useState(todayIso);
+  const [impactFilter, setImpactFilter] = useState('ALL');
+
+  const grouped = useMemo(() => groupEventsByDate(normalizedEvents), [normalizedEvents]);
+
+  const dayEventsRaw = useMemo(() => {
+    const group = grouped.find((g) => g.date === selectedDay);
+    return group?.events ?? [];
+  }, [grouped, selectedDay]);
+
+  const dayEventsFiltered = useMemo(
+    () => filterEventsByImpact(dayEventsRaw, impactFilter),
+    [dayEventsRaw, impactFilter]
+  );
+
+  const slots = useMemo(
+    () => groupEventsByTimeSlot(dayEventsFiltered),
+    [dayEventsFiltered]
+  );
+
+  const summary = useMemo(
+    () => summarizeDay(dayEventsRaw, selectedDay),
+    [dayEventsRaw, selectedDay]
+  );
+
+  const currencies = useMemo(() => countCurrencies(dayEventsRaw), [dayEventsRaw]);
+
+  const weekBounds = useMemo(
+    () => getWeekBoundsFromEvents(normalizedEvents),
+    [normalizedEvents]
+  );
+
+  const weekRangeLabel = useMemo(() => {
+    if (weekBounds) {
+      return formatWeekRangeLabelFromIso(weekBounds.monday, weekBounds.sunday);
+    }
+    return getThisWeekRangeLabel();
+  }, [weekBounds]);
+
+  const weekRows = useMemo(
+    () => buildWeekDayRows(normalizedEvents, selectedDay, todayIso),
+    [normalizedEvents, selectedDay, todayIso]
+  );
+
+  const journalPrompt = useMemo(
+    () => buildJournalPrompt(dayEventsRaw, selectedDay),
+    [dayEventsRaw, selectedDay]
+  );
+
+  const glanceTitle = selectedDay === todayIso ? 'Today at a glance' : 'Day at a glance';
 
   useEffect(() => {
     if (fetchedAt === null) {
@@ -33,81 +95,80 @@ export function NewsCalendarView() {
     }
   }, [dispatch, fetchedAt]);
 
+  /** Align selected day with loaded event dates (not necessarily the IST calendar week). */
+  useEffect(() => {
+    if (!normalizedEvents.length) return;
+    setSelectedDay((current) => resolveSelectedNewsDay(normalizedEvents, todayIso, current));
+  }, [normalizedEvents, todayIso]);
+
+  const handleViewFullWeek = () => {
+    if (weekBounds && todayIso >= weekBounds.monday && todayIso <= weekBounds.sunday) {
+      setSelectedDay(todayIso);
+      return;
+    }
+    if (weekBounds) {
+      setSelectedDay(weekBounds.monday);
+    } else {
+      setSelectedDay(todayIso);
+    }
+  };
+
+  const handleAddJournalNote = () => {
+    dispatch(openWriteJournal(selectedDay));
+    dispatch(setActiveTab('journal'));
+  };
+
+  if (loading && normalizedEvents.length === 0) {
+    return (
+      <div className="py-16 text-center text-sm text-slate-400 bg-pit-card border border-pit-border rounded-xl">
+        Loading calendar…
+      </div>
+    );
+  }
+
+  if (!loading && normalizedEvents.length === 0 && !error) {
+    return (
+      <div className="py-16 text-center text-sm text-slate-400 bg-pit-card border border-pit-border rounded-xl">
+        No economic events scheduled this week.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div className="bg-pit-card border border-pit-border rounded-xl p-4">
-        <p className="text-sm text-slate-300">This week&apos;s economic events</p>
-        <p className="text-xs text-slate-500 mt-0.5">{weekLabel}</p>
-      </div>
-
-      {error && (
+      {error ? (
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
           {error}
         </div>
-      )}
+      ) : null}
 
-      <div className="bg-pit-card border border-pit-border rounded-xl overflow-hidden">
-        {loading && events.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-400">Loading calendar…</div>
-        ) : !loading && events.length === 0 && !error ? (
-          <div className="py-16 text-center text-sm text-slate-400">
-            No economic events scheduled this week.
-          </div>
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-pit-bg text-xs uppercase text-slate-400">
-              <tr>
-                <th className="py-3 px-4 w-20">Time</th>
-                <th className="py-3 px-4 w-24">Cur.</th>
-                <th className="py-3 px-4 w-28">Impact</th>
-                <th className="py-3 px-4">Event</th>
-                <th className="py-3 px-4 text-right w-24">Actual</th>
-                <th className="py-3 px-4 text-right w-24">Forecast</th>
-                <th className="py-3 px-4 text-right w-24">Previous</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-pit-border">
-              {grouped.map(({ date, events: dayEvents }) => (
-                <React.Fragment key={date}>
-                  <tr className="bg-pit-bg/80">
-                    <td
-                      colSpan={COL_COUNT}
-                      className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-slate-300"
-                    >
-                      {formatEventDateHeader(date)}
-                    </td>
-                  </tr>
-                  {dayEvents.map((ev) => (
-                    <tr key={ev.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3 px-4 font-mono text-xs text-slate-300">
-                        {formatEventTime(ev.eventTime)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-bold text-white">{ev.currency}</span>
-                        {ev.country ? (
-                          <span className="block text-[10px] text-slate-500">{ev.country}</span>
-                        ) : null}
-                      </td>
-                      <td className="py-3 px-4">
-                        <ImpactBadge impact={ev.impact} />
-                      </td>
-                      <td className="py-3 px-4 text-slate-200">{ev.eventName}</td>
-                      <td className="py-3 px-4 text-right font-mono text-xs text-white">
-                        {formatValue(ev.actual)}
-                      </td>
-                      <td className="py-3 px-4 text-right font-mono text-xs text-slate-300">
-                        {formatValue(ev.forecast)}
-                      </td>
-                      <td className="py-3 px-4 text-right font-mono text-xs text-slate-400">
-                        {formatValue(ev.previous)}
-                      </td>
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+        <div className="space-y-6 min-w-0">
+          <NewsDayHeader
+            selectedDay={selectedDay}
+            todayIso={todayIso}
+            weekRangeLabel={weekRangeLabel}
+            impactFilter={impactFilter}
+            onImpactFilterChange={setImpactFilter}
+            summary={summary}
+          />
+          <NewsTimeline
+            slots={slots}
+            eventDate={selectedDay}
+            showNowMarker={selectedDay === todayIso}
+          />
+        </div>
+
+        <NewsSideRail
+          glanceTitle={glanceTitle}
+          dayEvents={dayEventsRaw}
+          currencies={currencies}
+          weekRows={weekRows}
+          onSelectDay={setSelectedDay}
+          onViewFullWeek={handleViewFullWeek}
+          journalPrompt={journalPrompt}
+          onAddJournalNote={handleAddJournalNote}
+        />
       </div>
     </div>
   );

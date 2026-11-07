@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import App, { MainContent } from './App';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { mockUser } from '@/test/fixtures';
+import { mockUser, mockEconomicEvents } from '@/test/fixtures';
+import * as newsDayTimeline from '@/features/news/utils/newsDayTimeline';
 
 describe('App', () => {
   it('shows AuthView when not authenticated', () => {
@@ -37,6 +38,14 @@ describe('App', () => {
 });
 
 describe('MainContent', () => {
+  beforeEach(() => {
+    vi.spyOn(newsDayTimeline, 'getTodayIsoInNewsTz').mockReturnValue('2026-10-20');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('shows journal loading state', () => {
     renderWithProviders(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
       preloadedState: {
@@ -79,7 +88,7 @@ describe('MainContent', () => {
           selectedTrade: null,
         },
         news: {
-          events: [],
+          events: mockEconomicEvents,
           loading: false,
           error: null,
           fetchedAt: 1,
@@ -87,7 +96,7 @@ describe('MainContent', () => {
       },
     });
     expect(screen.queryByText(/Loading your journal/)).not.toBeInTheDocument();
-    expect(screen.getByText(/This week's economic events/i)).toBeInTheDocument();
+    expect(screen.getByText(/Rest of the week/i)).toBeInTheDocument();
   });
 
   it('skips journal error on news calendar tab', () => {
@@ -109,7 +118,7 @@ describe('MainContent', () => {
           selectedTrade: null,
         },
         news: {
-          events: [],
+          events: mockEconomicEvents,
           loading: false,
           error: null,
           fetchedAt: 1,
@@ -117,7 +126,7 @@ describe('MainContent', () => {
       },
     });
     expect(screen.queryByText('Bootstrap failed')).not.toBeInTheDocument();
-    expect(screen.getByText(/This week's economic events/i)).toBeInTheDocument();
+    expect(screen.getByText(/Rest of the week/i)).toBeInTheDocument();
   });
 
   it('shows journal error outside markets tab', () => {

@@ -12,8 +12,8 @@ const IMPACT_STYLES = {
     text: 'Med',
   },
   LOW: {
-    bar: 'bg-yellow-500/80',
-    label: 'text-yellow-400/90',
+    bar: 'bg-emerald-400/85',
+    label: 'text-emerald-400/95',
     text: 'Low',
   },
   NON_ECONOMIC: {
@@ -23,8 +23,28 @@ const IMPACT_STYLES = {
   },
 };
 
-export function ImpactBadge({ impact }) {
+const COMPACT_TEXT = {
+  HIGH: 'HIGH',
+  MEDIUM: 'MED',
+  LOW: 'LOW',
+  NON_ECONOMIC: 'N/E',
+};
+
+export function ImpactBar({ impact }) {
   const style = IMPACT_STYLES[impact] || IMPACT_STYLES.NON_ECONOMIC;
+  return <span className={`w-1 self-stretch min-h-[2rem] rounded-full shrink-0 ${style.bar}`} aria-hidden />;
+}
+
+export function ImpactBadge({ impact, compact = false }) {
+  const style = IMPACT_STYLES[impact] || IMPACT_STYLES.NON_ECONOMIC;
+
+  if (compact) {
+    return (
+      <span className={`text-[10px] font-bold uppercase tracking-wide ${style.label}`} title={impact}>
+        {COMPACT_TEXT[impact] || COMPACT_TEXT.NON_ECONOMIC}
+      </span>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2" title={impact}>
