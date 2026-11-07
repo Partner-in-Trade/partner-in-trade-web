@@ -12,8 +12,8 @@ const IMPACT_STYLES = {
     text: 'Med',
   },
   LOW: {
-    bar: 'bg-yellow-500/80',
-    label: 'text-yellow-400/90',
+    bar: 'bg-emerald-400/85',
+    label: 'text-emerald-400/95',
     text: 'Low',
   },
   NON_ECONOMIC: {

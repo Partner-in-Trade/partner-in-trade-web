@@ -12,7 +12,7 @@ function ImpactMixBar({ mix }) {
   const segments = [
     { key: 'high', count: mix.high, className: 'bg-rose-500' },
     { key: 'medium', count: mix.medium, className: 'bg-amber-500' },
-    { key: 'low', count: mix.low, className: 'bg-yellow-500/85' },
+    { key: 'low', count: mix.low, className: 'bg-emerald-400/85' },
   ].filter((s) => s.count > 0);
 
   return (
@@ -52,7 +52,11 @@ export function NewsSideRail({
             {mix.medium > 0 ? (
               <span><span className="text-amber-400 font-semibold">{mix.medium}</span> Medium</span>
             ) : null}
-            {mix.low > 0 ? <span><span className="text-yellow-500/90 font-semibold">{mix.low}</span> Low</span> : null}
+            {mix.low > 0 ? (
+              <span>
+                <span className="text-emerald-400/95 font-semibold">{mix.low}</span> Low
+              </span>
+            ) : null}
           </div>
         </div>
         <div>
