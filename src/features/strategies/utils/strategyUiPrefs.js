@@ -43,5 +43,5 @@ export function toggleStrategyPin(strategyId) {
 }
 
 export function strategyStatusOverride(strategyId, prefs = readPrefs()) {
-  return prefs.statusById[String(strategyId)] || null;
+  return prefs?.statusById?.[String(strategyId)] || null;
 }
