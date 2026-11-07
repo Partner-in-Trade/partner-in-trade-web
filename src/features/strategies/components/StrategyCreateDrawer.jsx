@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerStrategyInWorkspace, selectUser } from '@/app/store';
+import { MARKET_TYPES } from '@/constants/markets';
 import { TRADING_SESSIONS } from '@/constants/tradingSessions';
 import {
   STRATEGY_TAG_SUGGESTIONS,
@@ -29,6 +30,7 @@ function defaultForm() {
     rulesSetup: '',
     worksInTrendingMarket: '',
     worksInRangingMarket: '',
+    marketTypes: [],
     timeframes: ['15m'],
     sessions: ['London'],
     preferredSymbols: '',
@@ -71,8 +73,28 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const buildPayload = (isActive) => {
+    const symbols = form.preferredSymbols
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return {
+      name: form.name.trim(),
+      description: form.description.trim() || null,
+      tags: form.tags,
+      rulesSetup: form.rulesSetup.trim() || null,
+      worksInTrendingMarket: parseBoolSelect(form.worksInTrendingMarket),
+      worksInRangingMarket: parseBoolSelect(form.worksInRangingMarket),
+      marketTypes: form.marketTypes,
+      timeframes: form.timeframes,
+      sessions: form.sessions,
+      preferredSymbols: symbols.length ? symbols : null,
+      riskNotes: form.riskNotes.trim() || null,
+      isActive,
+    };
+  };
+
+  const handleSave = async (isActive) => {
     const trimmed = form.name.trim();
     if (!trimmed) {
       setToast('Strategy name is required.');
@@ -82,27 +104,14 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
       setToast('You must be signed in.');
       return;
     }
-
-    const symbols = form.preferredSymbols
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
+    if (isActive && form.marketTypes.length === 0) {
+      setToast('Select at least one market type to activate this strategy.');
+      return;
+    }
 
     setSubmitting(true);
     try {
-      const res = await strategiesApi.create({
-        name: trimmed,
-        description: form.description.trim() || null,
-        tags: form.tags,
-        rulesSetup: form.rulesSetup.trim() || null,
-        worksInTrendingMarket: parseBoolSelect(form.worksInTrendingMarket),
-        worksInRangingMarket: parseBoolSelect(form.worksInRangingMarket),
-        timeframes: form.timeframes,
-        sessions: form.sessions,
-        preferredSymbols: symbols.length ? symbols : null,
-        riskNotes: form.riskNotes.trim() || null,
-        userId: Number(user.id),
-      });
+      const res = await strategiesApi.create(buildPayload(isActive));
       dispatch(registerStrategyInWorkspace(res.data));
       onCreated?.(res.data);
       onClose();
@@ -143,7 +152,13 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
             </button>
           </header>
 
-          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave(true);
+            }}
+            className="flex min-h-0 flex-1 flex-col"
+          >
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
               <section>
                 <SectionTitle>Basic information</SectionTitle>
@@ -261,6 +276,25 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
                   </label>
                 </div>
                 <div className="mb-3">
+                  <span className="text-xs font-medium text-slate-400">Market types</span>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {MARKET_TYPES.map((mt) => (
+                      <label
+                        key={mt}
+                        className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-300"
+                      >
+                        <input
+                          type="checkbox"
+                          className="rounded border-pit-border bg-pit-bg text-indigo-600"
+                          checked={form.marketTypes.includes(mt)}
+                          onChange={() => toggleList('marketTypes', mt)}
+                        />
+                        {mt}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="mb-3">
                   <span className="text-xs font-medium text-slate-400">Recommended timeframes</span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {STRATEGY_TIMEFRAME_OPTIONS.map((tf) => (
@@ -319,7 +353,7 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
               </section>
             </div>
 
-            <footer className="flex shrink-0 gap-3 border-t border-pit-border bg-pit-bg px-5 py-4">
+            <footer className="flex shrink-0 flex-col gap-2 border-t border-pit-border bg-pit-bg px-5 py-4 sm:flex-row sm:gap-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -328,11 +362,19 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
                 Cancel
               </button>
               <button
+                type="button"
+                disabled={submitting}
+                onClick={() => handleSave(false)}
+                className="flex-1 rounded-lg border border-pit-border py-2.5 text-sm font-semibold text-slate-200 hover:bg-pit-card disabled:opacity-50"
+              >
+                {submitting ? 'Saving…' : 'Save as draft'}
+              </button>
+              <button
                 type="submit"
                 disabled={submitting}
                 className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
               >
-                {submitting ? 'Saving…' : 'Save strategy'}
+                {submitting ? 'Saving…' : 'Save & activate'}
               </button>
             </footer>
           </form>

@@ -148,6 +148,12 @@ export function StrategyDetailDrawer({ open, strategy, onClose }) {
               <dl className="grid gap-4 sm:grid-cols-2">
                 <DetailBlock label="Description">{strategy.description}</DetailBlock>
                 <DetailBlock label="Type">{strategy.type}</DetailBlock>
+                <DetailBlock label="Market types">
+                  {(strategy.marketTypes || []).join(', ') || null}
+                </DetailBlock>
+                <DetailBlock label="Status">
+                  {strategy.isActive ? 'Active' : 'Draft'}
+                </DetailBlock>
                 <DetailBlock label="Primary timeframe">{strategy.timeframe}</DetailBlock>
                 <DetailBlock label="Timeframes">
                   {(strategy.timeframes || []).join(', ') || null}

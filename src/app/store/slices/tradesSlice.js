@@ -14,6 +14,7 @@ const initialTradesState = {
   tradesError: null,
   isAddModalOpen: false,
   prefillDate: null,
+  prefillSetup: null,
   selectedTrade: null,
 };
 
@@ -105,7 +106,17 @@ const tradesSlice = createSlice({
       state.isAddModalOpen = action.payload;
     },
     openAddTradeModal(state, action) {
-      state.prefillDate = action.payload ?? null;
+      const payload = action.payload;
+      if (payload == null) {
+        state.prefillDate = null;
+        state.prefillSetup = null;
+      } else if (typeof payload === 'string') {
+        state.prefillDate = payload;
+        state.prefillSetup = null;
+      } else {
+        state.prefillDate = payload.date ?? null;
+        state.prefillSetup = payload.setup ?? null;
+      }
       state.isAddModalOpen = true;
     },
     setSelectedTrade(state, action) {

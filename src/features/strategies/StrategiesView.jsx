@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Layers, TrendingUp, BarChart2, Hash } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchStrategies,
+  openAddTradeModal,
   selectEnrichedTrades,
+  selectMarkets,
   selectSelectedMarket,
   selectStrategies,
   selectStrategiesError,
@@ -14,7 +16,6 @@ import {
   selectWorkspaceLoading,
   setStrategiesSearch,
 } from '@/app/store';
-import { KpiCard } from '@/components/ui/KpiCard';
 import {
   buildStrategyPerformanceMap,
   performanceForStrategy,
@@ -23,14 +24,35 @@ import {
 import { StrategyCreateDrawer } from '@/features/strategies/components/StrategyCreateDrawer';
 import { StrategyDetailDrawer } from '@/features/strategies/components/StrategyDetailDrawer';
 import { StrategiesListStatus } from '@/features/strategies/components/StrategiesListStatus';
+import { StrategyCard } from '@/features/strategies/components/StrategyCard';
+import {
+  STATUS_FILTERS,
+  strategyListStatus,
+  statusMatchesFilter,
+} from '@/features/strategies/utils/strategyStatus';
+import {
+  buildStrategyEquitySeries,
+  marketTypesForStrategy,
+  rulesFollowedPercent,
+} from '@/features/strategies/utils/strategyTradeInsights';
+import {
+  loadStrategyUiPrefs,
+  isStrategyPinned,
+  toggleStrategyPin,
+} from '@/features/strategies/utils/strategyUiPrefs';
 
 const SORT_OPTIONS = [
+  { id: 'winrate-desc', label: 'Win rate' },
+  { id: 'pnl-desc', label: 'Net P&L' },
+  { id: 'trades-desc', label: 'Trades' },
   { id: 'name-asc', label: 'Name (A–Z)' },
   { id: 'name-desc', label: 'Name (Z–A)' },
-  { id: 'trades-desc', label: 'Trades (high–low)' },
-  { id: 'winrate-desc', label: 'Win rate (high–low)' },
-  { id: 'pnl-desc', label: 'Net P&L (high–low)' },
 ];
+
+const STATUS_TAB_LABELS = {
+  active: 'Active',
+  draft: 'Drafts',
+};
 
 function currencySymbol(currency) {
   return currency === 'INR' ? '₹' : '$';
@@ -43,24 +65,11 @@ function formatPnl(amount, currency) {
   return `${n >= 0 ? '+' : '-'}${sym}${formatted}`;
 }
 
-function strategyInitial(name) {
-  return (name || '?').trim().charAt(0).toUpperCase();
-}
-
-function tagColorClass(tag, index) {
-  const palette = [
-    'bg-indigo-500/15 text-indigo-300',
-    'bg-emerald-500/15 text-emerald-300',
-    'bg-amber-500/15 text-amber-300',
-    'bg-sky-500/15 text-sky-300',
-  ];
-  return palette[index % palette.length];
-}
-
 export function StrategiesView() {
   const dispatch = useDispatch();
   const selectedMarket = useSelector(selectSelectedMarket);
   const enrichedTrades = useSelector(selectEnrichedTrades);
+  const markets = useSelector(selectMarkets);
   const strategies = useSelector(selectStrategies);
   const searchInput = useSelector(selectStrategiesSearch);
   const loadedSearch = useSelector(selectStrategiesLoadedSearch);
@@ -71,7 +80,9 @@ export function StrategiesView() {
   const currency = selectedMarket?.currency || 'USD';
 
   const trimmedSearch = searchInput.trim();
-  const [sortBy, setSortBy] = useState('name-asc');
+  const [sortBy, setSortBy] = useState('winrate-desc');
+  const [statusFilter, setStatusFilter] = useState('active');
+  const [uiPrefs, setUiPrefs] = useState(() => loadStrategyUiPrefs());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailStrategy, setDetailStrategy] = useState(null);
 
@@ -96,24 +107,44 @@ export function StrategiesView() {
   const rows = useMemo(() => {
     return strategies.map((s) => {
       const perf = performanceForStrategy(perfMap, s);
+      const status = strategyListStatus(s, uiPrefs);
       return {
         strategy: s,
         perf,
         winRate: winRatePercent(perf),
+        status,
+        pinned: isStrategyPinned(s.id, uiPrefs),
+        equitySeries: buildStrategyEquitySeries(enrichedTrades, s),
+        rulesPercent: rulesFollowedPercent(enrichedTrades, s),
+        marketTypes: marketTypesForStrategy(enrichedTrades, s, markets),
+        timeframeLabel: s.timeframe || s.timeframes?.[0] || null,
       };
     });
-  }, [strategies, perfMap]);
+  }, [strategies, perfMap, enrichedTrades, uiPrefs, markets]);
+
+  const activeCount = useMemo(
+    () => strategies.filter((s) => s.isActive === true).length,
+    [strategies]
+  );
+
+  const filteredRows = useMemo(
+    () => rows.filter((r) => statusMatchesFilter(r.status, statusFilter)),
+    [rows, statusFilter]
+  );
 
   const sortedRows = useMemo(() => {
-    const copy = [...rows];
+    const copy = [...filteredRows];
+    const pinRank = (row) => (row.pinned ? 0 : 1);
     copy.sort((a, b) => {
+      const pinDiff = pinRank(a) - pinRank(b);
+      if (pinDiff !== 0) return pinDiff;
       switch (sortBy) {
         case 'name-desc':
           return b.strategy.name.localeCompare(a.strategy.name);
         case 'trades-desc':
           return b.perf.tradeCount - a.perf.tradeCount;
         case 'winrate-desc':
-          return b.winRate - a.winRate;
+          return b.winRate - a.winRate || b.perf.tradeCount - a.perf.tradeCount;
         case 'pnl-desc':
           return b.perf.netPnl - a.perf.netPnl;
         default:
@@ -121,176 +152,170 @@ export function StrategiesView() {
       }
     });
     return copy;
-  }, [rows, sortBy]);
+  }, [filteredRows, sortBy]);
 
-  const kpis = useMemo(() => {
-    let totalTrades = 0;
-    let totalWins = 0;
-    let totalNetPnl = 0;
-    rows.forEach(({ perf }) => {
-      totalTrades += perf.tradeCount;
-      totalWins += perf.wins;
-      totalNetPnl += perf.netPnl;
-    });
-    const aggregateWinRate = totalTrades ? Math.round((totalWins / totalTrades) * 100) : 0;
-    return {
-      totalStrategies: strategies.length,
-      totalTrades,
-      aggregateWinRate,
-      totalNetPnl,
-    };
-  }, [rows, strategies.length]);
+  const handleTogglePin = (strategyId) => {
+    setUiPrefs(toggleStrategyPin(strategyId));
+  };
+
+  const handleLogTrade = (strategyName) => {
+    dispatch(openAddTradeModal({ setup: strategyName }));
+  };
+
+  const showEmpty =
+    !initialLoading && !isSearching && !error && sortedRows.length === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Strategies</h2>
-          <p className="text-sm text-slate-400 mt-1">
-            Manage your trading strategies and track their performance.
+          <h2 className="text-lg font-semibold text-white">Playbook</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            {strategies.length} strateg{strategies.length === 1 ? 'y' : 'ies'} • {activeCount}{' '}
+            active. Pin your favourites to keep them first.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 shrink-0"
+          aria-label="Create new strategy"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 hover:from-indigo-500 hover:to-violet-500"
         >
           <Plus className="h-4 w-4" />
           New strategy
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title="Total strategies" value={kpis.totalStrategies} icon={Layers} />
-        <KpiCard
-          title="Total trades"
-          value={kpis.totalTrades}
-          icon={Hash}
-          trend="neutral"
-        />
-        <KpiCard
-          title="Win rate (all)"
-          value={`${kpis.aggregateWinRate}%`}
-          icon={BarChart2}
-        />
-        <KpiCard
-          title="Net P&L (all)"
-          value={formatPnl(kpis.totalNetPnl, currency)}
-          icon={TrendingUp}
-          trend={kpis.totalNetPnl >= 0 ? 'positive' : 'negative'}
-        />
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-md w-full">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="relative w-full max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <input
             type="search"
             value={searchInput}
             onChange={(e) => dispatch(setStrategiesSearch(e.target.value))}
-            placeholder="Search strategies…"
-            className="w-full rounded-lg border border-pit-border bg-pit-card py-2 pl-10 pr-3 text-sm text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            placeholder="Search strategies..."
+            className="w-full rounded-xl border border-pit-border bg-pit-card py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-400 shrink-0">
-          Sort by
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-lg border border-pit-border bg-pit-card px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div
+            className="inline-flex flex-wrap gap-1 rounded-xl border border-pit-border bg-pit-card p-1"
+            role="tablist"
+            aria-label="Strategy status"
           >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
+            {STATUS_FILTERS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={statusFilter === id}
+                onClick={() => setStatusFilter(id)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  statusFilter === id
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                }`}
+              >
+                {STATUS_TAB_LABELS[id]}
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-xs text-slate-400">
+              Sort by
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="rounded-lg border border-pit-border bg-pit-card px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-pit-card border border-pit-border rounded-xl overflow-hidden">
-        {error && (
-          <div className="p-4 text-sm text-rose-300 border-b border-pit-border">{error}</div>
-        )}
-        {initialLoading ? (
+      {error ? (
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+          {error}
+        </div>
+      ) : null}
+
+      {initialLoading ? (
+        <div className="rounded-2xl border border-pit-border bg-pit-card">
           <StrategiesListStatus
             message="Loading your strategies…"
             submessage="Pulling playbooks from your account."
           />
-        ) : isSearching ? (
+        </div>
+      ) : isSearching ? (
+        <div className="rounded-2xl border border-pit-border bg-pit-card">
           <StrategiesListStatus
             pulse
             message="Zeroing in on your edge…"
             submessage="Matching names, tags, and notes across your playbook."
           />
-        ) : sortedRows.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-400">
-            {trimmedSearch
-              ? 'No strategies match your search.'
-              : 'No strategies yet. Create your first one.'}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[720px]">
-              <thead className="bg-pit-bg text-xs uppercase text-slate-400">
-                <tr>
-                  <th className="py-3 px-4">Strategy</th>
-                  <th className="py-3 px-4">Description</th>
-                  <th className="py-3 px-4 text-right">Trades</th>
-                  <th className="py-3 px-4 text-right">Win rate</th>
-                  <th className="py-3 px-4 text-right">Net P&L</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-pit-border">
-                {sortedRows.map(({ strategy, perf, winRate }) => (
-                  <tr
-                    key={strategy.id}
-                    className="cursor-pointer hover:bg-slate-800/30"
-                    onClick={() => setDetailStrategy(strategy)}
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-sm font-bold text-indigo-300">
-                          {strategyInitial(strategy.name)}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-white">{strategy.name}</div>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {(strategy.tags || []).slice(0, 4).map((tag, i) => (
-                              <span
-                                key={tag}
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${tagColorClass(tag, i)}`}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-400 max-w-xs truncate">
-                      {strategy.description || '—'}
-                    </td>
-                    <td className="py-3 px-4 text-right font-mono text-slate-200">
-                      {perf.tradeCount}
-                    </td>
-                    <td className="py-3 px-4 text-right font-mono text-indigo-400">
-                      {perf.tradeCount ? `${winRate}%` : '—'}
-                    </td>
-                    <td
-                      className={`py-3 px-4 text-right font-mono font-bold ${
-                        perf.netPnl >= 0 ? 'text-pit-profit' : 'text-pit-loss'
-                      }`}
-                    >
-                      {perf.tradeCount ? formatPnl(perf.netPnl, currency) : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : showEmpty ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-pit-border bg-pit-card/40 p-6 text-center transition hover:border-indigo-500/50 hover:bg-pit-card/70"
+          >
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-pit-border bg-pit-bg text-slate-400">
+              <Plus className="h-6 w-6" />
+            </div>
+            <p className="text-sm font-semibold text-white">New strategy</p>
+            <p className="mt-2 max-w-xs text-xs text-slate-500">
+              {trimmedSearch
+                ? 'No strategies match your search.'
+                : 'Start blank, or from a template like ICT Silver Bullet or Opening Range.'}
+            </p>
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {sortedRows.map((row) => (
+            <StrategyCard
+              key={row.strategy.id}
+              strategy={row.strategy}
+              perf={row.perf}
+              winRate={row.winRate}
+              status={row.status}
+              pinned={row.pinned}
+              currency={currency}
+              equitySeries={row.equitySeries}
+              rulesPercent={row.rulesPercent}
+              marketTypes={row.marketTypes}
+              timeframeLabel={row.timeframeLabel}
+              formatPnl={formatPnl}
+              onTogglePin={() => handleTogglePin(row.strategy.id)}
+              onOpenPlaybook={() => setDetailStrategy(row.strategy)}
+              onLogTrade={() => handleLogTrade(row.strategy.name)}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-pit-border bg-pit-card/40 p-6 text-center transition hover:border-indigo-500/50 hover:bg-pit-card/70"
+          >
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-pit-border bg-pit-bg text-slate-400">
+              <Plus className="h-6 w-6" />
+            </div>
+            <p className="text-sm font-semibold text-white">New strategy</p>
+            <p className="mt-2 max-w-xs text-xs text-slate-500">
+              Start blank, or from a template like ICT Silver Bullet or Opening Range.
+            </p>
+          </button>
+        </div>
+      )}
 
       <StrategyCreateDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <StrategyDetailDrawer

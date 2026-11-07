@@ -106,6 +106,13 @@ describe('tradesSlice', () => {
     expect(store.getState().trades.prefillDate).toBe('2025-06-01');
   });
 
+  it('openAddTradeModal accepts setup prefill object', () => {
+    const store = createTestStore();
+    store.dispatch(openAddTradeModal({ setup: 'ORB' }));
+    expect(store.getState().trades.isAddModalOpen).toBe(true);
+    expect(store.getState().trades.prefillSetup).toBe('ORB');
+  });
+
   it('logout resets trades slice', () => {
     const store = createTestStore({
       auth: { user: mockUser, authError: null, authLoading: false },

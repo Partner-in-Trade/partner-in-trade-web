@@ -6,6 +6,7 @@ import {
   setIsAddModalOpen,
   selectIsAddModalOpen,
   selectPrefillDate,
+  selectPrefillSetup,
   selectMarkets,
   selectSelectedMarketId,
   selectStrategyNames,
@@ -114,6 +115,7 @@ export function TradeEntryModal() {
   const dispatch = useDispatch();
   const isAddModalOpen = useSelector(selectIsAddModalOpen);
   const prefillDate = useSelector(selectPrefillDate);
+  const prefillSetup = useSelector(selectPrefillSetup);
   const markets = useSelector(selectMarkets);
   const selectedMarketId = useSelector(selectSelectedMarketId);
   const strategyNames = useSelector(selectStrategyNames);
@@ -124,13 +126,13 @@ export function TradeEntryModal() {
     if (isAddModalOpen) {
       const initialMarketId = selectedMarketId ?? markets[0]?.id ?? '';
       const market = markets.find((m) => m.id === initialMarketId);
-      const defaultSetup = strategyNames[0] || '';
+      const defaultSetup = prefillSetup || strategyNames[0] || '';
       setForm({
         ...defaultForm(prefillDate || todayIsoDate(), initialMarketId, defaultSetup),
         ...(market?.currency ? { currency: market.currency } : {}),
       });
     }
-  }, [isAddModalOpen, prefillDate, selectedMarketId, markets, strategyNames]);
+  }, [isAddModalOpen, prefillDate, prefillSetup, selectedMarketId, markets, strategyNames]);
 
   const selectedFormMarket = useMemo(() => {
     if (form.marketId === '' || form.marketId == null) return null;

@@ -10,8 +10,11 @@ import { API_BASE } from '@/test/msw/handlers';
 const mockStrategy = {
   id: 5,
   name: 'VWAP Bounce',
-  description: 'Mean reversion',
+  description: 'Mean reversion setup',
+  rulesSetup: 'Wait for VWAP touch',
   tags: ['VWAP'],
+  marketTypes: ['Stocks'],
+  isActive: true,
 };
 
 function preloaded(strategies = [mockStrategy], overrides = {}) {
@@ -49,7 +52,7 @@ describe('StrategiesView', () => {
 
   it('shows empty state when no strategies in store', () => {
     renderWithProviders(<StrategiesView />, { preloadedState: preloaded([]) });
-    expect(screen.getByText(/No strategies yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/Start blank/i)).toBeInTheDocument();
   });
 
   it('lists strategies from Redux without refetching when search matches cache', () => {
@@ -62,8 +65,22 @@ describe('StrategiesView', () => {
       http.get(`${API_BASE}/strategies/user/:userId`, ({ request }) => {
         const search = (new URL(request.url).searchParams.get('search') || '').toLowerCase();
         const all = [
-          { id: 1, name: 'Alpha Setup', description: '', tags: [] },
-          { id: 2, name: 'Beta Flow', description: '', tags: [] },
+          {
+            id: 1,
+            name: 'Alpha Setup',
+            description: 'Active playbook',
+            tags: [],
+            isActive: true,
+            marketTypes: ['Futures'],
+          },
+          {
+            id: 2,
+            name: 'Beta Flow',
+            description: 'Active playbook',
+            tags: [],
+            isActive: true,
+            marketTypes: ['Forex'],
+          },
         ];
         const filtered = search
           ? all.filter((s) => s.name.toLowerCase().includes(search))
@@ -78,8 +95,22 @@ describe('StrategiesView', () => {
     renderWithProviders(<StrategiesView />, {
       preloadedState: preloaded(
         [
-          { id: 1, name: 'Alpha Setup', description: '', tags: [] },
-          { id: 2, name: 'Beta Flow', description: '', tags: [] },
+          {
+            id: 1,
+            name: 'Alpha Setup',
+            description: 'Active playbook',
+            tags: [],
+            isActive: true,
+            marketTypes: ['Futures'],
+          },
+          {
+            id: 2,
+            name: 'Beta Flow',
+            description: 'Active playbook',
+            tags: [],
+            isActive: true,
+            marketTypes: ['Forex'],
+          },
         ],
         { strategiesLoadedSearch: '' }
       ),
@@ -106,10 +137,24 @@ describe('StrategiesView', () => {
     });
   });
 
+  it('filters drafts when Drafts tab is selected', () => {
+    renderWithProviders(<StrategiesView />, {
+      preloadedState: preloaded([
+        { id: 1, name: 'Live', description: 'x', isActive: true, marketTypes: ['Stocks'] },
+        { id: 2, name: 'Sketch', description: '', isActive: false, marketTypes: [] },
+      ]),
+    });
+    expect(screen.getByText('Live')).toBeInTheDocument();
+    expect(screen.queryByText('Sketch')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Drafts' }));
+    expect(screen.getByText('Sketch')).toBeInTheDocument();
+    expect(screen.queryByText('Live')).not.toBeInTheDocument();
+  });
+
   it('requires name when creating strategy', async () => {
     renderWithProviders(<StrategiesView />, { preloadedState: preloaded() });
-    fireEvent.click(screen.getByRole('button', { name: /New strategy/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Save strategy/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Create new strategy/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Save & activate/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/Strategy name is required/i)).toBeInTheDocument();
