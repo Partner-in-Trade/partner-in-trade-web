@@ -25,6 +25,7 @@ export const selectTradesLoading = (state) => state.trades.tradesLoading;
 export const selectTradesError = (state) => state.trades.tradesError;
 export const selectIsAddModalOpen = (state) => state.trades.isAddModalOpen;
 export const selectPrefillDate = (state) => state.trades.prefillDate;
+export const selectPrefillSetup = (state) => state.trades.prefillSetup;
 export const selectSelectedTrade = (state) => state.trades.selectedTrade;
 
 export const selectAnalytics = (state) => state.analytics?.data ?? null;

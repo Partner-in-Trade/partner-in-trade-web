@@ -1,5 +1,11 @@
 import { apiClient } from '@/lib/apiClient';
 
+/**
+ * Create body (maps 1:1 to StrategyCreateRequest):
+ * name, description, tags, rulesSetup, worksInTrendingMarket, worksInRangingMarket,
+ * marketTypes, timeframes, sessions, preferredSymbols, riskNotes, isActive
+ */
+
 /** Must match backend StrategyService.MAX_PAGE_SIZE (100). */
 export const STRATEGIES_MAX_PAGE_SIZE = 100;
 
