@@ -57,7 +57,7 @@ describe('Sidebar', () => {
         },
       },
     });
-    expect(screen.getByRole('button', { name: /Log Manual Trade/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Log Trade/i })).toBeDisabled();
   });
 
   it('journal sidebar calendar day switches to day view', async () => {

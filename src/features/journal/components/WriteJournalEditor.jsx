@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, MoreHorizontal, Newspaper, Trash2, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, MoreHorizontal, Newspaper } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchJournalByDate,
@@ -16,15 +16,7 @@ import { formatJournalDateHeader, emptyDailyJournalForm } from '@/constants/jour
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { formatEventTime } from '@/features/news/utils/weekRangeLabel';
 import { ImpactBadge } from '@/features/news/components/ImpactBadge';
-import { MAX_JOURNAL_IMAGE_BYTES } from '@/features/journal/utils/journalMediaUpload';
-
 const SECTION_MIN = '14rem';
-
-function revokeBlobUrl(url) {
-  if (typeof url === 'string' && url.startsWith('blob:')) {
-    URL.revokeObjectURL(url);
-  }
-}
 
 function JournalDayNewsPanel({ open, onToggle, events }) {
   if (!open) {
@@ -129,41 +121,6 @@ export function WriteJournalEditor() {
     }
   };
 
-  const handleScreenshotAdd = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > MAX_JOURNAL_IMAGE_BYTES) {
-      window.alert('Image must be under 2 MB');
-      return;
-    }
-    const id = crypto.randomUUID();
-    const imageUrl = URL.createObjectURL(file);
-    registerPendingUpload(id, file);
-    set({
-      screenshots: [
-        ...form.screenshots,
-        {
-          id,
-          caption: file.name.replace(/\.[^.]+$/, ''),
-          imageUrl,
-        },
-      ],
-    });
-    e.target.value = '';
-  };
-
-  const removeScreenshot = (id) => {
-    const shot = form.screenshots.find((s) => s.id === id);
-    revokeBlobUrl(shot?.imageUrl);
-    setPendingUploads((prev) => {
-      if (!prev[id]) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-    set({ screenshots: form.screenshots.filter((s) => s.id !== id) });
-  };
-
   return (
     <div className="flex w-full items-start gap-3">
       <div className="flex-1 min-w-0">
@@ -257,51 +214,6 @@ export function WriteJournalEditor() {
                 minHeight={SECTION_MIN}
                 registerPendingUpload={registerPendingUpload}
               />
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-semibold text-white">Screenshots</h2>
-                <label className="inline-flex items-center gap-1.5 text-xs text-indigo-400 cursor-pointer hover:text-indigo-300">
-                  <ImagePlus className="w-4 h-4" />
-                  Add image
-                  <input type="file" accept="image/*" className="hidden" onChange={handleScreenshotAdd} />
-                </label>
-              </div>
-              {form.screenshots.length === 0 ? (
-                <p className="text-sm text-slate-500 py-8 text-center border border-dashed border-pit-border rounded-lg">
-                  Attach chart captures for this session (max 2 MB each).
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {form.screenshots.map((shot) => (
-                    <div key={shot.id} className="relative rounded-lg border border-pit-border overflow-hidden bg-pit-bg">
-                      <button
-                        type="button"
-                        onClick={() => removeScreenshot(shot.id)}
-                        className="absolute top-2 right-2 p-1.5 rounded-md bg-black/50 text-slate-300 hover:text-rose-400 z-10"
-                        aria-label="Remove screenshot"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <img src={shot.imageUrl} alt={shot.caption || 'Screenshot'} className="w-full h-40 object-cover" />
-                      <input
-                        type="text"
-                        value={shot.caption}
-                        onChange={(e) =>
-                          set({
-                            screenshots: form.screenshots.map((s) =>
-                              s.id === shot.id ? { ...s, caption: e.target.value } : s
-                            ),
-                          })
-                        }
-                        placeholder="Caption (e.g. BTCUSDT · 5m)"
-                        className="w-full px-3 py-2 text-xs bg-slate-900/80 border-t border-pit-border text-slate-300 focus:outline-none"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
             </section>
           </div>
         </div>
