@@ -14,6 +14,13 @@ export function mapSubscriptionMe(dto) {
   };
 }
 
+export function mapSubscriptionEntitlements(dto) {
+  return {
+    effectivePlanCode: dto?.effectivePlanCode ?? 'FREE',
+    capabilities: Array.isArray(dto?.capabilities) ? dto.capabilities : [],
+  };
+}
+
 export function mapPlanCatalogue(dtoList) {
   if (!Array.isArray(dtoList)) return [];
   return dtoList.map((dto) => ({
