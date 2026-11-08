@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { waitFor } from '@testing-library/react';
 import { openRazorpaySubscriptionCheckout } from './loadRazorpayCheckout';
 
 describe('openRazorpaySubscriptionCheckout', () => {
@@ -33,6 +34,7 @@ describe('openRazorpaySubscriptionCheckout', () => {
       keyId: 'rzp_test_key',
       subscriptionId: 'sub_test_id',
     });
+    await waitFor(() => expect(options).not.toBeNull());
     options.handler({ razorpay_payment_id: 'pay_test_id' });
 
     await expect(resultPromise).resolves.toEqual({ outcome: 'checkout_callback' });
@@ -45,6 +47,7 @@ describe('openRazorpaySubscriptionCheckout', () => {
       keyId: 'rzp_test_key',
       subscriptionId: 'sub_test_id',
     });
+    await waitFor(() => expect(options).not.toBeNull());
     options.modal.ondismiss();
 
     await expect(resultPromise).rejects.toThrow('Checkout dismissed');
@@ -57,6 +60,7 @@ describe('openRazorpaySubscriptionCheckout', () => {
       keyId: 'rzp_test_key',
       subscriptionId: 'sub_test_id',
     });
+    await waitFor(() => expect(handlers['payment.failed']).toBeTypeOf('function'));
     handlers['payment.failed']({ error: { description: 'declined' } });
 
     await expect(resultPromise).rejects.toThrow('Payment failed');
@@ -69,7 +73,9 @@ describe('openRazorpaySubscriptionCheckout', () => {
       keyId: 'rzp_test_key',
       subscriptionId: 'sub_test_id',
     });
+    await waitFor(() => expect(options).not.toBeNull());
     options.handler({});
+    await waitFor(() => expect(options).not.toBeNull());
     options.modal.ondismiss();
     handlers['payment.failed']({});
 
