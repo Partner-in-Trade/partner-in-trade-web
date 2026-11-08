@@ -160,7 +160,7 @@ export const mockEconomicEvents = [
 
 export const mockSubscriptionMe = (overrides = {}) => ({
   planCode: 'FREE',
-  effectivePlanCode: 'FREE',
+  effectivePlanCode: overrides.effectivePlanCode ?? overrides.planCode ?? 'FREE',
   status: 'ACTIVE',
   billingInterval: 'MONTHLY',
   currentPeriodStart: null,
