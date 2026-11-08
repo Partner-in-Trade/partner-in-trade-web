@@ -6,6 +6,9 @@ import {
   selectJournalError,
   selectNeedsSubscriptionOnboarding,
   selectOnboardingComplete,
+  PRODUCT_CAPABILITIES,
+  selectAvailableCapabilities,
+  selectHasCapability,
 } from './selectors';
 describe('selectors', () => {
   const baseState = {
@@ -54,6 +57,38 @@ describe('selectors', () => {
     };
     expect(selectNeedsSubscriptionOnboarding(trial)).toBe(false);
     expect(selectOnboardingComplete(trial)).toBe(true);
+  });
+
+  it('uses centralized plan capability mapping and backend entitlements', () => {
+    const free = baseState;
+    expect(selectAvailableCapabilities(free)).toEqual([]);
+    expect(selectHasCapability(free, PRODUCT_CAPABILITIES.DASHBOARD)).toBe(false);
+
+    const trial = {
+      ...baseState,
+      subscription: { me: { planCode: 'TRIAL' }, status: 'ready' },
+    };
+    expect(selectHasCapability(trial, PRODUCT_CAPABILITIES.NEWS_CALENDAR)).toBe(true);
+
+    const basic = {
+      ...baseState,
+      subscription: { me: { planCode: 'BASIC' }, status: 'ready' },
+    };
+    expect(selectHasCapability(basic, PRODUCT_CAPABILITIES.STRATEGIES)).toBe(true);
+    expect(selectHasCapability(basic, PRODUCT_CAPABILITIES.PNL_CALENDAR)).toBe(false);
+
+    const backendEntitlements = {
+      ...basic,
+      subscription: {
+        ...basic.subscription,
+        entitlements: {
+          effectivePlanCode: 'BASIC',
+          capabilities: ['DASHBOARD', 'NEWS_CALENDAR'],
+        },
+      },
+    };
+    expect(selectHasCapability(backendEntitlements, PRODUCT_CAPABILITIES.NEWS_CALENDAR)).toBe(true);
+    expect(selectHasCapability(backendEntitlements, PRODUCT_CAPABILITIES.STRATEGIES)).toBe(false);
   });
 
   it('selectJournalLoading and selectJournalError combine workspace and trades', () => {
