@@ -37,9 +37,23 @@ describe('subscriptionSlice', () => {
     expect(state.plans.length).toBeGreaterThan(0);
   });
 
-  it('startFreeTrial updates me', async () => {
-    const store = configureStore({ reducer: { subscription: subscriptionReducer } });
+  it('startFreeTrial updates me and clears stale FREE entitlements', async () => {
+    const store = configureStore({
+      reducer: { subscription: subscriptionReducer },
+      preloadedState: {
+        subscription: {
+          me: { planCode: 'FREE' },
+          plans: [],
+          entitlements: { effectivePlanCode: 'FREE', capabilities: [] },
+          status: 'ready',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: null,
+        },
+      },
+    });
     await store.dispatch(startFreeTrial());
     expect(store.getState().subscription.me.planCode).toBe('TRIAL');
+    expect(store.getState().subscription.entitlements).toBeNull();
   });
 });
