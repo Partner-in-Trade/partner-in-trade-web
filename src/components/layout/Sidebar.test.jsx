@@ -11,6 +11,11 @@ describe('Sidebar', () => {
     const onTab = vi.fn();
     renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={onTab} />, {
       preloadedState: {
+        subscription: {
+          me: { planCode: 'TRIAL', effectivePlanCode: 'TRIAL' },
+          entitlements: { effectivePlanCode: 'TRIAL', capabilities: ['DASHBOARD', 'ANALYTICS', 'PNL_CALENDAR', 'JOURNAL', 'JOURNAL_MEDIA', 'TRADE_LOG', 'STRATEGIES', 'MARKETS', 'NEWS_CALENDAR'] },
+          status: 'ready',
+        },
         auth: { user: mockUser, authError: null, authLoading: false },
         workspace: {
           markets: [{ id: 10, name: 'Forex' }],
@@ -30,6 +35,11 @@ describe('Sidebar', () => {
     const onTab = vi.fn();
     renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={onTab} />, {
       preloadedState: {
+        subscription: {
+          me: { planCode: 'TRIAL', effectivePlanCode: 'TRIAL' },
+          entitlements: { effectivePlanCode: 'TRIAL', capabilities: ['DASHBOARD', 'ANALYTICS', 'PNL_CALENDAR', 'JOURNAL', 'JOURNAL_MEDIA', 'TRADE_LOG', 'STRATEGIES', 'MARKETS', 'NEWS_CALENDAR'] },
+          status: 'ready',
+        },
         auth: { user: mockUser, authError: null, authLoading: false },
         workspace: {
           markets: [{ id: 10, name: 'Forex' }],
@@ -49,6 +59,11 @@ describe('Sidebar', () => {
     const onTab = vi.fn();
     renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={onTab} />, {
       preloadedState: {
+        subscription: {
+          me: { planCode: 'TRIAL', effectivePlanCode: 'TRIAL' },
+          entitlements: { effectivePlanCode: 'TRIAL', capabilities: ['DASHBOARD', 'ANALYTICS', 'PNL_CALENDAR', 'JOURNAL', 'JOURNAL_MEDIA', 'TRADE_LOG', 'STRATEGIES', 'MARKETS', 'NEWS_CALENDAR'] },
+          status: 'ready',
+        },
         auth: { user: mockUser, authError: null, authLoading: false },
         workspace: {
           markets: [{ id: 10, name: 'Forex' }],
@@ -66,6 +81,11 @@ describe('Sidebar', () => {
   it('disables log trade without selected market', () => {
     renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={() => {}} />, {
       preloadedState: {
+        subscription: {
+          me: { planCode: 'TRIAL', effectivePlanCode: 'TRIAL' },
+          entitlements: { effectivePlanCode: 'TRIAL', capabilities: ['DASHBOARD', 'ANALYTICS', 'PNL_CALENDAR', 'JOURNAL', 'JOURNAL_MEDIA', 'TRADE_LOG', 'STRATEGIES', 'MARKETS', 'NEWS_CALENDAR'] },
+          status: 'ready',
+        },
         auth: { user: mockUser, authError: null, authLoading: false },
         workspace: {
           markets: [],
@@ -86,7 +106,12 @@ describe('Sidebar', () => {
       <Sidebar activeTab="journal" setActiveTab={onTab} />,
       {
         preloadedState: {
-          auth: { user: mockUser, authError: null, authLoading: false },
+          subscription: {
+          me: { planCode: 'TRIAL', effectivePlanCode: 'TRIAL' },
+          entitlements: { effectivePlanCode: 'TRIAL', capabilities: ['DASHBOARD', 'ANALYTICS', 'PNL_CALENDAR', 'JOURNAL', 'JOURNAL_MEDIA', 'TRADE_LOG', 'STRATEGIES', 'MARKETS', 'NEWS_CALENDAR'] },
+          status: 'ready',
+        },
+        auth: { user: mockUser, authError: null, authLoading: false },
           workspace: {
             markets: [{ id: 10, name: 'Forex' }],
             selectedMarketId: 10,
@@ -113,10 +138,44 @@ describe('Sidebar', () => {
     expect(store.getState().journal.selectedDate).toBe('2025-05-12');
   });
 
+
+  it('shows only features included in the effective plan capabilities', () => {
+    renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={() => {}} />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: { planCode: 'BASIC', effectivePlanCode: 'BASIC' },
+          entitlements: {
+            effectivePlanCode: 'BASIC',
+            capabilities: ['DASHBOARD', 'ANALYTICS', 'JOURNAL', 'JOURNAL_MEDIA', 'TRADE_LOG', 'STRATEGIES', 'MARKETS'],
+          },
+          status: 'ready',
+        },
+        workspace: {
+          markets: [{ id: 10, name: 'Forex' }],
+          selectedMarketId: 10,
+          strategiesByName: {},
+          workspaceLoading: false,
+          workspaceError: null,
+        },
+      },
+    });
+
+    expect(screen.getByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Journal' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'P&L Calendar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'News Calendar' })).not.toBeInTheDocument();
+  });
+
   it('logout clears auth state', async () => {
     const user = userEvent.setup();
     const { store } = renderWithProviders(<Sidebar activeTab="dashboard" setActiveTab={() => {}} />, {
       preloadedState: {
+        subscription: {
+          me: { planCode: 'TRIAL', effectivePlanCode: 'TRIAL' },
+          entitlements: { effectivePlanCode: 'TRIAL', capabilities: ['DASHBOARD', 'ANALYTICS', 'PNL_CALENDAR', 'JOURNAL', 'JOURNAL_MEDIA', 'TRADE_LOG', 'STRATEGIES', 'MARKETS', 'NEWS_CALENDAR'] },
+          status: 'ready',
+        },
         auth: { user: mockUser, authError: null, authLoading: false },
         workspace: {
           markets: [{ id: 10, name: 'Forex' }],
