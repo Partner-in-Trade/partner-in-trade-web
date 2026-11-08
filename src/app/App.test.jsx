@@ -46,6 +46,33 @@ describe('MainContent', () => {
     vi.restoreAllMocks();
   });
 
+  it('renders AnalyticsView without waiting for journal bootstrap', () => {
+    renderWithProviders(
+      <MainContent activeTab="analytics" onNavigate={() => {}} />,
+      {
+        preloadedState: {
+          workspace: {
+            markets: [],
+            selectedMarketId: null,
+            strategiesByName: {},
+            workspaceLoading: true,
+            workspaceError: null,
+          },
+          trades: {
+            rawTrades: [],
+            tradesLoading: false,
+            tradesError: null,
+            isAddModalOpen: false,
+            prefillDate: null,
+            selectedTrade: null,
+          },
+        },
+      }
+    );
+    expect(screen.getByText('Partner in Trade Analytics')).toBeInTheDocument();
+    expect(screen.queryByText(/Loading your journal/)).not.toBeInTheDocument();
+  });
+
   it('shows journal loading state', () => {
     renderWithProviders(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
       preloadedState: {

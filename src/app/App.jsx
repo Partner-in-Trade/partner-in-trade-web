@@ -11,6 +11,7 @@ import {
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { DashboardView } from '@/features/dashboard/DashboardView';
+import { AnalyticsView } from '@/features/analytics/AnalyticsView';
 import { CalendarView } from '@/features/calendar/CalendarView';
 import { TradeLogView } from '@/features/trades/components/TradeLogView';
 import { MarketsView } from '@/features/markets/MarketsView';
@@ -28,6 +29,7 @@ export function MainContent({ activeTab, onNavigate }) {
     activeTab === 'markets' ||
     activeTab === 'strategies' ||
     activeTab === 'news-calendar' ||
+    activeTab === 'analytics' ||
     activeTab === 'journal';
   const showJournalLoading = loading && !journalIndependentTab;
 
@@ -50,6 +52,7 @@ export function MainContent({ activeTab, onNavigate }) {
   return (
     <>
       {activeTab === 'dashboard' && <DashboardView onNavigate={onNavigate} />}
+      {activeTab === 'analytics' && <AnalyticsView />}
       {activeTab === 'calendar' && <CalendarView />}
       {activeTab === 'tradelog' && <TradeLogView />}
       {activeTab === 'markets' && <MarketsView />}
