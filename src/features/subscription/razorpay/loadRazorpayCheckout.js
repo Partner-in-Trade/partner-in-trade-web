@@ -33,18 +33,26 @@ export async function openRazorpaySubscriptionCheckout({ keyId, subscriptionId }
   }
   const Razorpay = await loadRazorpayScript();
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      callback(value);
+    };
     const options = {
       key: keyId,
       subscription_id: subscriptionId,
       name: 'Partner in Trade',
       description: 'Subscription',
-      handler: () => resolve({ success: true }),
+      // This only reports that Razorpay invoked its client callback. It is not
+      // proof of payment; subscription access must come from backend entitlements.
+      handler: () => settle(resolve, { outcome: 'checkout_callback' }),
       modal: {
-        ondismiss: () => reject(new Error('Checkout dismissed')),
+        ondismiss: () => settle(reject, new Error('Checkout dismissed')),
       },
     };
     const instance = new Razorpay(options);
-    instance.on('payment.failed', () => reject(new Error('Payment failed')));
+    instance.on('payment.failed', () => settle(reject, new Error('Payment failed')));
     instance.open();
   });
 }
