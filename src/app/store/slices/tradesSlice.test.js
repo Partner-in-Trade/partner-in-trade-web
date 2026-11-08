@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
+import { server } from '@/test/msw/server';
+import { API_BASE } from '@/test/msw/handlers';
 import { createTestStore } from '@/test/renderWithProviders';
 import {
   fetchTrades,
@@ -87,6 +90,54 @@ describe('tradesSlice', () => {
     await waitFor(() => {
       expect(store.getState().analytics.data?.marketId).toBe(10);
     });
+  });
+
+  it('failed closeTrade leaves the trade open and does not refresh analytics', async () => {
+    server.use(
+      http.patch(`${API_BASE}/trades/:tradeId/close`, () =>
+        HttpResponse.json({ message: 'Exit price is invalid' }, { status: 400 })
+      )
+    );
+    const openTrade = apiTradeToUi({
+      ...mockApiTrade,
+      id: 'open-trade-failure',
+      status: 'OPEN',
+      exitPrice: null,
+      exitDate: null,
+    });
+    const store = createTestStore({
+      auth: { user: mockUser, authError: null, authLoading: false },
+      workspace: {
+        markets: mockMarkets,
+        selectedMarketId: 10,
+        strategiesByName: { 'VWAP Bounce': 5 },
+        workspaceLoading: false,
+        workspaceError: null,
+      },
+      trades: {
+        rawTrades: [openTrade],
+        tradesLoading: false,
+        tradesError: null,
+        isAddModalOpen: false,
+        prefillDate: null,
+        selectedTrade: null,
+      },
+    });
+
+    const result = await store.dispatch(closeTrade({
+      tradeId: 'open-trade-failure',
+      exitPrice: 0,
+      closingFees: 2,
+    }));
+
+    expect(closeTrade.rejected.match(result)).toBe(true);
+    expect(result.payload).toBe('Exit price is invalid');
+    expect(store.getState().trades.rawTrades[0]).toMatchObject({
+      id: 'open-trade-failure',
+      status: 'OPEN',
+      exitPrice: '',
+    });
+    expect(store.getState().analytics.data).toBeNull();
   });
 
   it('deleteTrade removes trade and clears selection when needed', async () => {
