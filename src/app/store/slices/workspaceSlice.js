@@ -173,7 +173,7 @@ const workspaceSlice = createSlice({
       const strategy = action.payload;
       if (!strategy || strategy.id == null) return;
       const { name, id } = strategy;
-      state.deletedStrategyIds = state.deletedStrategyIds.filter(
+      state.deletedStrategyIds = (state.deletedStrategyIds || []).filter(
         (deletedId) => Number(deletedId) !== Number(id)
       );
       if (name) {
@@ -192,6 +192,7 @@ const workspaceSlice = createSlice({
       state.strategies = state.strategies.filter(
         (strategy) => Number(strategy.id) !== strategyId
       );
+      state.deletedStrategyIds = state.deletedStrategyIds || [];
       if (!state.deletedStrategyIds.includes(strategyId)) {
         state.deletedStrategyIds.push(strategyId);
       }
@@ -223,11 +224,11 @@ const workspaceSlice = createSlice({
         state.workspaceLoading = false;
         state.markets = marketList;
         state.strategies = strategies.filter(
-          (strategy) => !state.deletedStrategyIds.includes(Number(strategy.id))
+          (strategy) => !(state.deletedStrategyIds || []).includes(Number(strategy.id))
         );
         state.strategiesByName = Object.fromEntries(
           Object.entries(strategyMap).filter(
-            ([, id]) => !state.deletedStrategyIds.includes(Number(id))
+            ([, id]) => !(state.deletedStrategyIds || []).includes(Number(id))
           )
         );
         state.strategiesLoadedSearch = '';
