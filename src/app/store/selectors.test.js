@@ -89,6 +89,16 @@ describe('selectors', () => {
     };
     expect(selectHasCapability(backendEntitlements, PRODUCT_CAPABILITIES.NEWS_CALENDAR)).toBe(true);
     expect(selectHasCapability(backendEntitlements, PRODUCT_CAPABILITIES.STRATEGIES)).toBe(false);
+
+    const omittedCapabilities = {
+      ...basic,
+      subscription: {
+        ...basic.subscription,
+        entitlements: { effectivePlanCode: 'BASIC', capabilities: null },
+      },
+    };
+    expect(selectHasCapability(omittedCapabilities, PRODUCT_CAPABILITIES.STRATEGIES)).toBe(true);
+    expect(selectHasCapability(omittedCapabilities, PRODUCT_CAPABILITIES.PNL_CALENDAR)).toBe(false);
   });
 
   it('selectJournalLoading and selectJournalError combine workspace and trades', () => {
