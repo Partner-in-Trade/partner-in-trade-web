@@ -7,6 +7,7 @@ import {
   strategiesListResponse,
   mockSubscriptionMe,
   mockSubscriptionPlans,
+  mockSubscriptionEntitlements,
 } from '../fixtures';
 
 export const API_BASE = 'http://localhost:8080/api/v1';
@@ -188,6 +189,10 @@ export const handlers = [
   http.get(`${API_BASE}/subscriptions/me`, () => HttpResponse.json(mockSubscriptionMe())),
 
   http.get(`${API_BASE}/subscriptions/plans`, () => HttpResponse.json(mockSubscriptionPlans())),
+
+  http.get(`${API_BASE}/subscriptions/entitlements`, () =>
+    HttpResponse.json(mockSubscriptionEntitlements())
+  ),
 
   http.post(`${API_BASE}/subscriptions/start-trial`, () =>
     HttpResponse.json(mockSubscriptionMe({ planCode: 'TRIAL', onboardingCompleted: true }))
