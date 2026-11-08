@@ -25,9 +25,14 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function waitForSubscriptionActivation(planCode) {
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const subscription = await fetchSubscriptionMe();
-    if (subscription?.status === 'ACTIVE' && subscription?.planCode === planCode) {
-      return true;
+    try {
+      const subscription = await fetchSubscriptionMe();
+      if (subscription?.status === 'ACTIVE' && subscription?.planCode === planCode) {
+        return true;
+      }
+    } catch {
+      // Webhook processing and short-lived API/network failures can overlap.
+      // Keep polling; the final refresh below will surface the latest state.
     }
     if (attempt < 9) await delay(1500);
   }
