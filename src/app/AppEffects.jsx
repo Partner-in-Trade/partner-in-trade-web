@@ -45,7 +45,7 @@ export function AppEffects() {
 
   useEffect(() => {
     if (!user?.id) return;
-    if (subscriptionStatus === 'idle' || subscriptionStatus === 'error') {
+    if (subscriptionStatus === 'idle') {
       dispatch(fetchSubscriptionContext());
     }
   }, [dispatch, user?.id, subscriptionStatus]);
