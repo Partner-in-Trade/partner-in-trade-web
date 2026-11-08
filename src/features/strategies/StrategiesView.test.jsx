@@ -6,6 +6,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { mockUser } from '@/test/fixtures';
 import { server } from '@/test/msw/server';
 import { API_BASE } from '@/test/msw/handlers';
+import { fetchStrategies, removeStrategyFromWorkspace } from '@/app/store/slices/workspaceSlice';
 
 const mockStrategy = {
   id: 5,
@@ -315,6 +316,50 @@ describe('StrategiesView', () => {
     await waitFor(() => expect(deleteButton).toBeDisabled());
     expect(screen.getByText(/1 linked trade/i)).toBeInTheDocument();
     expect(deleteCalls).toBe(0);
+  });
+
+  it('deletes a Draft strategy and removes it from the Drafts list', async () => {
+    const draft = { ...mockStrategy, id: 8, name: 'Draft setup', isActive: false };
+    server.use(
+      http.get(`${API_BASE}/strategies/:strategyId/trades`, () => HttpResponse.json([])),
+      http.delete(`${API_BASE}/strategies/:strategyId`, () =>
+        new HttpResponse(null, { status: 204 })
+      )
+    );
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderWithProviders(<StrategiesView />, {
+      preloadedState: preloaded([draft]),
+    });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Drafts' }));
+    fireEvent.click(screen.getByRole('button', { name: /Open playbook/i }));
+    const deleteButton = await screen.findByRole('button', { name: /^Delete$/i });
+    await waitFor(() => expect(deleteButton).toBeEnabled());
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Draft setup')).not.toBeInTheDocument();
+      expect(screen.getByText(/Start blank/i)).toBeInTheDocument();
+    });
+    confirm.mockRestore();
+  });
+
+  it('does not restore a deleted strategy when an older fetch resolves afterward', () => {
+    const { store } = renderWithProviders(<StrategiesView />, {
+      preloadedState: preloaded(),
+    });
+    const stalePayload = {
+      strategies: [mockStrategy],
+      strategiesByName: { [mockStrategy.name]: mockStrategy.id },
+      searchQuery: '',
+    };
+
+    store.dispatch(fetchStrategies.pending('stale-request', ''));
+    store.dispatch(removeStrategyFromWorkspace(mockStrategy.id));
+    store.dispatch(fetchStrategies.fulfilled(stalePayload, 'stale-request', ''));
+
+    expect(store.getState().workspace.strategies).toEqual([]);
+    expect(store.getState().workspace.strategiesByName).not.toHaveProperty(mockStrategy.name);
   });
 
   it('keeps deletion disabled if linked trades cannot be verified', async () => {
