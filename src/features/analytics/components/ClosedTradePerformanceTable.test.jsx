@@ -29,7 +29,7 @@ describe('ClosedTradePerformanceTable', () => {
     expect(screen.getByText('LOSS')).toBeInTheDocument();
     expect(screen.getByText('BREAKEVEN')).toBeInTheDocument();
     expect(screen.getByText('$125.50')).toBeInTheDocument();
-    expect(screen.getByText('$-40.00')).toBeInTheDocument();
+    expect(screen.getByText('-$40.00')).toBeInTheDocument();
     expect(screen.getByText('2.50R')).toBeInTheDocument();
     expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
