@@ -21,4 +21,5 @@ export const strategiesApi = {
   getById: (strategyId) => apiClient.get(`/strategies/${strategyId}`),
   getTrades: (strategyId) => apiClient.get(`/strategies/${strategyId}/trades`),
   create: (strategy) => apiClient.post('/strategies/add', strategy),
+  update: (strategyId, strategy) => apiClient.put('/strategies/' + strategyId, strategy),
 };
