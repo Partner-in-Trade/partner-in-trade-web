@@ -34,17 +34,47 @@ export function AuthView() {
     email: '',
     password: '',
   });
+  const [localError, setLocalError] = useState(null);
+
+  const switchMode = (next) => {
+    setMode(next);
+    setLocalError(null);
+    dispatch(clearAuthError());
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalError(null);
     dispatch(clearAuthError());
     if (mode === 'login') {
-      await dispatch(login({ email: form.email, password: form.password }));
+      await dispatch(login({ email: form.email.trim(), password: form.password }));
     } else {
+      const fullName = form.fullName.trim();
+      const email = form.email.trim();
+      if (!fullName) {
+        setLocalError('Full name is required.');
+        return;
+      }
+      if (fullName.length < 3) {
+        setLocalError('Name must be at least 3 characters (required for billing).');
+        return;
+      }
+      if (fullName.length > 25) {
+        setLocalError('Name must be 25 characters or fewer.');
+        return;
+      }
+      if (form.password.length < 10) {
+        setLocalError('Password must be at least 10 characters.');
+        return;
+      }
+      if (form.password.length > 128) {
+        setLocalError('Password must be 128 characters or fewer.');
+        return;
+      }
       await dispatch(
         register({
-          fullName: form.fullName,
-          email: form.email,
+          fullName,
+          email,
           password: form.password,
         })
       );
@@ -115,7 +145,7 @@ export function AuthView() {
           <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-pit-card border border-pit-border text-sm font-semibold">
             <button
               type="button"
-              onClick={() => setMode('login')}
+              onClick={() => switchMode('login')}
               className={`py-2.5 rounded-lg transition ${
                 mode === 'login'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
@@ -126,7 +156,7 @@ export function AuthView() {
             </button>
             <button
               type="button"
-              onClick={() => setMode('register')}
+              onClick={() => switchMode('register')}
               className={`py-2.5 rounded-lg transition ${
                 mode === 'register'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
@@ -174,9 +204,9 @@ export function AuthView() {
               </>
             )}
 
-            {authError && (
+            {(localError || authError) && (
               <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg px-3 py-2">
-                {authError}
+                {localError || authError}
               </p>
             )}
 
@@ -231,12 +261,17 @@ export function AuthView() {
                   <input
                     type="password"
                     required
+                    minLength={mode === 'register' ? 10 : undefined}
+                    maxLength={mode === 'register' ? 128 : undefined}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="••••••••••••"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-pit-bg border border-pit-border text-sm text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
+                {mode === 'register' && (
+                  <p className="text-[11px] text-slate-500 mt-1.5">Use at least 10 characters.</p>
+                )}
               </div>
 
               <button

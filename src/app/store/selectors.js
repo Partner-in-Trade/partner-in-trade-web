@@ -61,6 +61,69 @@ export const selectJournalError = (state) =>
 
 export const selectActiveTab = (state) => state.ui.activeTab;
 
+export const selectSubscriptionMe = (state) => state.subscription?.me ?? null;
+export const selectSubscriptionPlans = (state) => state.subscription?.plans ?? [];
+export const selectSubscriptionStatus = (state) => state.subscription?.status ?? 'idle';
+export const selectSubscriptionError = (state) => state.subscription?.error ?? null;
+export const selectSubscriptionEntitlements = (state) => state.subscription?.entitlements ?? null;
+
+export const PRODUCT_CAPABILITIES = Object.freeze({
+  DASHBOARD: 'DASHBOARD',
+  ANALYTICS: 'ANALYTICS',
+  PNL_CALENDAR: 'PNL_CALENDAR',
+  JOURNAL: 'JOURNAL',
+  JOURNAL_MEDIA: 'JOURNAL_MEDIA',
+  TRADE_LOG: 'TRADE_LOG',
+  STRATEGIES: 'STRATEGIES',
+  MARKETS: 'MARKETS',
+  NEWS_CALENDAR: 'NEWS_CALENDAR',
+});
+
+const PLAN_CAPABILITIES = Object.freeze({
+  FREE: [],
+  TRIAL: Object.values(PRODUCT_CAPABILITIES),
+  BASIC: [
+    PRODUCT_CAPABILITIES.DASHBOARD,
+    PRODUCT_CAPABILITIES.ANALYTICS,
+    PRODUCT_CAPABILITIES.JOURNAL,
+    PRODUCT_CAPABILITIES.JOURNAL_MEDIA,
+    PRODUCT_CAPABILITIES.TRADE_LOG,
+    PRODUCT_CAPABILITIES.STRATEGIES,
+    PRODUCT_CAPABILITIES.MARKETS,
+  ],
+  PRO: Object.values(PRODUCT_CAPABILITIES),
+});
+
+export const selectEffectivePlanCode = (state) =>
+  selectSubscriptionEntitlements(state)?.effectivePlanCode ??
+  selectSubscriptionMe(state)?.effectivePlanCode ??
+  selectSubscriptionMe(state)?.planCode ??
+  'FREE';
+
+export const selectAvailableCapabilities = (state) => {
+  const entitlements = selectSubscriptionEntitlements(state);
+  if (Array.isArray(entitlements?.capabilities)) return entitlements.capabilities;
+  return PLAN_CAPABILITIES[selectEffectivePlanCode(state)] ?? PLAN_CAPABILITIES.FREE;
+};
+
+export const selectHasCapability = (state, capability) =>
+  selectAvailableCapabilities(state).includes(capability);
+export const selectTrialLoading = (state) => state.subscription?.trialLoading ?? false;
+export const selectCheckoutLoading = (state) => state.subscription?.checkoutLoading ?? false;
+
+export const selectSubscriptionBootstrapping = (state) =>
+  selectIsAuthenticated(state) && selectSubscriptionStatus(state) === 'loading';
+
+export const selectNeedsSubscriptionOnboarding = (state) =>
+  selectSubscriptionStatus(state) === 'ready' &&
+  Boolean(selectSubscriptionMe(state)) &&
+  selectEffectivePlanCode(state) === 'FREE';
+
+export const selectOnboardingComplete = (state) =>
+  selectSubscriptionStatus(state) === 'ready' &&
+  Boolean(selectSubscriptionMe(state)) &&
+  selectEffectivePlanCode(state) !== 'FREE';
+
 // Sorting is presentation-only; financial metrics remain sourced from the backend.
 export const selectEnrichedTrades = createSelector(
   [selectRawTrades, selectAnalytics],

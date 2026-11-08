@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authApi } from '@/features/auth/api/authApi';
 import {
   mapLoginResponse,
+  parseApiErrorMessage,
   persistAuthSession,
   clearAuthSession,
   AUTH_STORAGE_KEY,
@@ -31,10 +32,7 @@ export const login = createAsyncThunk(
       return result.user;
     } catch (e) {
       const data = e.response?.data;
-      if (data && data.success === false && data.message) {
-        return rejectWithValue(data.message);
-      }
-      return rejectWithValue(data?.message || 'Invalid email or password');
+      return rejectWithValue(parseApiErrorMessage(data, 'Invalid email or password'));
     }
   }
 );
@@ -54,10 +52,7 @@ export const register = createAsyncThunk(
       return result.user;
     } catch (e) {
       const data = e.response?.data;
-      if (data && data.success === false && data.message) {
-        return rejectWithValue(data.message);
-      }
-      return rejectWithValue(data?.message || 'Registration failed');
+      return rejectWithValue(parseApiErrorMessage(data, 'Registration failed'));
     }
   }
 );

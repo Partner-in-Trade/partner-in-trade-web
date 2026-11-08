@@ -95,6 +95,27 @@ describe('authSlice', () => {
     expect(store.getState().trades.isAddModalOpen).toBe(false);
   });
 
+  it('register rejected parses Spring validation errors', async () => {
+    server.use(
+      http.post(`${API_BASE}/users/create`, () =>
+        HttpResponse.json(
+          {
+            message: "Validation failed for object='registerRequest'. Error count: 1",
+            errors: [{ defaultMessage: 'Password must be between 10 and 128 characters' }],
+          },
+          { status: 400 }
+        )
+      )
+    );
+    const store = createTestStore();
+    await store.dispatch(
+      register({ fullName: 'Test User', email: 't@t.com', password: '1234567890' })
+    );
+    expect(store.getState().auth.authError).toBe(
+      'Password must be between 10 and 128 characters'
+    );
+  });
+
   it('register rejected uses API message', async () => {
     server.use(
       http.post(`${API_BASE}/users/create`, () =>

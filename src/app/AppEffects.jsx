@@ -7,9 +7,13 @@ import {
   bootstrapWorkspace,
   fetchTrades,
   fetchMarketAnalytics,
+  fetchSubscriptionContext,
   selectUser,
   selectSelectedMarketId,
   selectWorkspaceLoading,
+  selectOnboardingComplete,
+  selectIsAuthenticated,
+  selectSubscriptionStatus,
 } from '@/app/store';
 
 export function AppEffects() {
@@ -17,6 +21,9 @@ export function AppEffects() {
   const user = useSelector(selectUser);
   const selectedMarketId = useSelector(selectSelectedMarketId);
   const workspaceLoading = useSelector(selectWorkspaceLoading);
+  const onboardingComplete = useSelector(selectOnboardingComplete);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const subscriptionStatus = useSelector(selectSubscriptionStatus);
 
   useEffect(() => {
     const handler = () => dispatch(logout());
@@ -37,14 +44,23 @@ export function AppEffects() {
   }, [user]);
 
   useEffect(() => {
-    if (user?.id) dispatch(bootstrapWorkspace());
-  }, [dispatch, user?.id]);
+    if (!user?.id) return;
+    if (subscriptionStatus === 'idle') {
+      dispatch(fetchSubscriptionContext());
+    }
+  }, [dispatch, user?.id, subscriptionStatus]);
 
   useEffect(() => {
+    if (!user?.id || !onboardingComplete) return;
+    dispatch(bootstrapWorkspace());
+  }, [dispatch, user?.id, onboardingComplete]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !onboardingComplete) return;
     if (workspaceLoading) return;
     dispatch(fetchTrades());
     if (selectedMarketId != null) dispatch(fetchMarketAnalytics(selectedMarketId));
-  }, [dispatch, selectedMarketId, workspaceLoading]);
+  }, [dispatch, selectedMarketId, workspaceLoading, isAuthenticated, onboardingComplete]);
 
   return null;
 }

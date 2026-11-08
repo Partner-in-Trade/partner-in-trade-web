@@ -158,6 +158,53 @@ export const mockEconomicEvents = [
   },
 ];
 
+export const mockSubscriptionMe = (overrides = {}) => ({
+  planCode: 'FREE',
+  effectivePlanCode: overrides.effectivePlanCode ?? overrides.planCode ?? 'FREE',
+  status: 'ACTIVE',
+  billingInterval: 'MONTHLY',
+  currentPeriodStart: null,
+  currentPeriodEnd: null,
+  cancelAtPeriodEnd: false,
+  pendingPlanCode: null,
+  razorpaySubscriptionIdMasked: null,
+  onboardingCompleted: false,
+  ...overrides,
+});
+
+export const mockSubscriptionEntitlements = (overrides = {}) => ({
+  effectivePlanCode: 'FREE',
+  capabilities: [],
+  ...overrides,
+});
+
+export const mockSubscriptionPlans = () => [
+  {
+    code: 'FREE',
+    displayName: 'Free',
+    pricePaise: 0,
+    priceInr: 0,
+    billingInterval: 'MONTHLY',
+    capabilities: [],
+  },
+  {
+    code: 'BASIC',
+    displayName: 'Basic',
+    pricePaise: 29900,
+    priceInr: 299,
+    billingInterval: 'MONTHLY',
+    capabilities: [],
+  },
+  {
+    code: 'PRO',
+    displayName: 'Pro',
+    pricePaise: 49900,
+    priceInr: 499,
+    billingInterval: 'MONTHLY',
+    capabilities: [],
+  },
+];
+
 export function mockNewsState(overrides = {}) {
   return {
     events: [],

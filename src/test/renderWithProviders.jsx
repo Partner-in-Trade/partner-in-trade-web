@@ -9,11 +9,13 @@ import analyticsReducer from '@/app/store/slices/analyticsSlice';
 import uiReducer from '@/app/store/slices/uiSlice';
 import newsReducer from '@/app/store/slices/newsSlice';
 import journalReducer from '@/app/store/slices/journalSlice';
+import subscriptionReducer from '@/app/store/slices/subscriptionSlice';
 
 export function createTestStore(preloadedState) {
   return configureStore({
     reducer: {
       auth: authReducer,
+      subscription: subscriptionReducer,
       workspace: workspaceReducer,
       trades: tradesReducer,
       analytics: analyticsReducer,

@@ -1,9 +1,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import App, { MainContent } from './App';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { mockUser, mockEconomicEvents } from '@/test/fixtures';
+import { mockUser, mockEconomicEvents, mockSubscriptionMe } from '@/test/fixtures';
 import * as newsDayTimeline from '@/features/news/utils/newsDayTimeline';
+
+const trialSubscription = {
+  me: mockSubscriptionMe({ planCode: 'TRIAL', effectivePlanCode: 'TRIAL', onboardingCompleted: true }),
+  plans: [],
+  entitlements: null,
+  status: 'ready',
+  trialLoading: false,
+  checkoutLoading: false,
+  error: null,
+};
+
+const renderMainContent = (ui, options = {}) =>
+  renderWithProviders(ui, {
+    ...options,
+    preloadedState: {
+      ...options.preloadedState,
+      subscription: trialSubscription,
+    },
+  });
 
 describe('App', () => {
   it('shows AuthView when not authenticated', () => {
@@ -11,10 +30,78 @@ describe('App', () => {
     expect(screen.getByText('Sign In to Dashboard')).toBeInTheDocument();
   });
 
-  it('shows app shell when authenticated', () => {
+
+  it('shows a recoverable error and retries subscription bootstrap', async () => {
+    const { store } = renderWithProviders(<App />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: null,
+          plans: [],
+          status: 'error',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: { code: 'NETWORK', message: 'Subscription service unavailable' },
+        },
+      },
+    });
+
+    expect(screen.getByText("We couldn't load your account")).toBeInTheDocument();
+    expect(screen.getByText('Subscription service unavailable')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => {
+      expect(store.getState().subscription.status).toBe('ready');
+    });
+  });
+
+  it('shows pricing onboarding when authenticated on FREE plan', () => {
     renderWithProviders(<App />, {
       preloadedState: {
         auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: mockSubscriptionMe({ planCode: 'FREE', onboardingCompleted: false }),
+          plans: [],
+          status: 'ready',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: null,
+        },
+      },
+    });
+    expect(screen.getByText('Simple pricing for serious traders')).toBeInTheDocument();
+    expect(screen.queryByText('Performance Overview')).not.toBeInTheDocument();
+  });
+
+  it('keeps FREE users on pricing even if onboarding flag is stale', () => {
+    renderWithProviders(<App />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: mockSubscriptionMe({ planCode: 'FREE', onboardingCompleted: true }),
+          plans: [],
+          status: 'ready',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: null,
+        },
+      },
+    });
+    expect(screen.getByText('Simple pricing for serious traders')).toBeInTheDocument();
+  });
+
+  it('shows app shell when authenticated on trial or paid plan', () => {
+    renderWithProviders(<App />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: mockSubscriptionMe({ planCode: 'TRIAL', effectivePlanCode: 'TRIAL', onboardingCompleted: true }),
+          plans: [],
+          status: 'ready',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: null,
+        },
         workspace: {
           markets: [{ id: 10, name: 'Forex', currency: 'USD', funds: 1000 }],
           selectedMarketId: 10,
@@ -47,7 +134,7 @@ describe('MainContent', () => {
   });
 
   it('renders AnalyticsView without waiting for journal bootstrap', () => {
-    renderWithProviders(
+    renderMainContent(
       <MainContent activeTab="analytics" onNavigate={() => {}} />,
       {
         preloadedState: {
@@ -74,7 +161,7 @@ describe('MainContent', () => {
   });
 
   it('shows journal loading state', () => {
-    renderWithProviders(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
+    renderMainContent(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
       preloadedState: {
         workspace: {
           markets: [],
@@ -97,7 +184,7 @@ describe('MainContent', () => {
   });
 
   it('skips journal loading on news calendar tab', () => {
-    renderWithProviders(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
+    renderMainContent(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
       preloadedState: {
         workspace: {
           markets: [],
@@ -127,7 +214,7 @@ describe('MainContent', () => {
   });
 
   it('skips journal error on news calendar tab', () => {
-    renderWithProviders(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
+    renderMainContent(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
       preloadedState: {
         workspace: {
           markets: [],
@@ -157,7 +244,7 @@ describe('MainContent', () => {
   });
 
   it('shows journal error outside markets tab', () => {
-    renderWithProviders(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
+    renderMainContent(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
       preloadedState: {
         workspace: {
           markets: [],

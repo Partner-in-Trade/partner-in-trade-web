@@ -6,10 +6,12 @@ import analyticsReducer from './slices/analyticsSlice';
 import uiReducer from './slices/uiSlice';
 import newsReducer from './slices/newsSlice';
 import journalReducer from './slices/journalSlice';
+import subscriptionReducer from './slices/subscriptionSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    subscription: subscriptionReducer,
     workspace: workspaceReducer,
     trades: tradesReducer,
     analytics: analyticsReducer,
@@ -27,3 +29,4 @@ export * from './slices/analyticsSlice';
 export * from './slices/uiSlice';
 export * from './slices/newsSlice';
 export * from './slices/journalSlice';
+export * from './slices/subscriptionSlice';

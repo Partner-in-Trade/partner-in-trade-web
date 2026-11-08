@@ -25,6 +25,8 @@ import {
   selectJournalLoading,
   setActiveTab,
   selectActiveTab,
+  selectAvailableCapabilities,
+  PRODUCT_CAPABILITIES,
 } from '@/app/store';
 import {
   openJournalDayView,
@@ -34,14 +36,14 @@ import {
 import { JournalSidebarPanel } from '@/features/journal/components/JournalSidebarPanel';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'calendar', label: 'P&L Calendar', icon: CalendarIcon },
-  { id: 'journal', label: 'Journal', icon: BookOpen, expandable: true },
-  { id: 'tradelog', label: 'Trade Log', icon: Table2 },
-  { id: 'strategies', label: 'Strategies', icon: Target },
-  { id: 'markets', label: 'Markets', icon: Wallet },
-  { id: 'news-calendar', label: 'News Calendar', icon: Newspaper },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, capability: PRODUCT_CAPABILITIES.DASHBOARD },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3, capability: PRODUCT_CAPABILITIES.ANALYTICS },
+  { id: 'calendar', label: 'P&L Calendar', icon: CalendarIcon, capability: PRODUCT_CAPABILITIES.PNL_CALENDAR },
+  { id: 'journal', label: 'Journal', icon: BookOpen, expandable: true, capability: PRODUCT_CAPABILITIES.JOURNAL },
+  { id: 'tradelog', label: 'Trade Log', icon: Table2, capability: PRODUCT_CAPABILITIES.TRADE_LOG },
+  { id: 'strategies', label: 'Strategies', icon: Target, capability: PRODUCT_CAPABILITIES.STRATEGIES },
+  { id: 'markets', label: 'Markets', icon: Wallet, capability: PRODUCT_CAPABILITIES.MARKETS },
+  { id: 'news-calendar', label: 'News Calendar', icon: Newspaper, capability: PRODUCT_CAPABILITIES.NEWS_CALENDAR },
 ];
 
 export function Sidebar({ activeTab, setActiveTab: setActiveTabProp }) {
@@ -52,6 +54,9 @@ export function Sidebar({ activeTab, setActiveTab: setActiveTabProp }) {
   const isDevBypassEnabled = selectIsDevBypassEnabled();
   const journalExpanded = useSelector(selectJournalNavExpanded);
   const currentTab = useSelector(selectActiveTab);
+  const availableCapabilities = useSelector(selectAvailableCapabilities);
+  const canLogTrade = availableCapabilities.includes(PRODUCT_CAPABILITIES.TRADE_LOG);
+  const visibleNavItems = NAV_ITEMS.filter((item) => availableCapabilities.includes(item.capability));
 
   const navigate = (tab) => {
     if (setActiveTabProp) setActiveTabProp(tab);
@@ -78,20 +83,22 @@ export function Sidebar({ activeTab, setActiveTab: setActiveTabProp }) {
           />
         </div>
 
-        <div className="p-4">
-          <button
-            type="button"
-            disabled={loading || !selectedMarket}
-            onClick={() => dispatch(openAddTradeModal())}
-            className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Log Trade
-          </button>
-        </div>
+        {canLogTrade && (
+          <div className="p-4">
+            <button
+              type="button"
+              disabled={loading || !selectedMarket}
+              onClick={() => dispatch(openAddTradeModal())}
+              className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Log Trade
+            </button>
+          </div>
+        )}
 
         <nav className="px-3 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
             if (item.expandable) {

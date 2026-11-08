@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { AppEffects } from './AppEffects';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { mockUser, mockMarkets } from '@/test/fixtures';
+import { mockUser, mockMarkets, mockSubscriptionMe } from '@/test/fixtures';
 import { AUTH_STORAGE_KEY } from '@/lib/mappers/authMapper';
 import * as apiClient from '@/lib/apiClient';
 import * as analyticsApiModule from '@/features/analytics/api/analyticsApi';
@@ -14,10 +14,31 @@ describe('AppEffects', () => {
     apiClient.setOnUnauthorized(null);
   });
 
+  const subscriptionReady = {
+    me: mockSubscriptionMe({ planCode: 'TRIAL', effectivePlanCode: 'TRIAL', onboardingCompleted: true }),
+    plans: [],
+    status: 'ready',
+    trialLoading: false,
+    checkoutLoading: false,
+    error: null,
+  };
+
+  it('loads subscription context when user is present', async () => {
+    const { store } = renderWithProviders(<AppEffects />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+      },
+    });
+    await waitFor(() => {
+      expect(store.getState().subscription.status).toBe('ready');
+    });
+  });
+
   it('bootstraps workspace when user is present', async () => {
     const { store } = renderWithProviders(<AppEffects />, {
       preloadedState: {
         auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: subscriptionReady,
       },
     });
     await waitFor(() => {
@@ -29,6 +50,7 @@ describe('AppEffects', () => {
     const { store } = renderWithProviders(<AppEffects />, {
       preloadedState: {
         auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: subscriptionReady,
       },
     });
     await waitFor(() => {
@@ -70,6 +92,7 @@ describe('AppEffects', () => {
     const { store } = renderWithProviders(<AppEffects />, {
       preloadedState: {
         auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: subscriptionReady,
         workspace: {
           markets: mockMarkets,
           selectedMarketId: 10,

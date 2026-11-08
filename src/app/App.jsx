@@ -6,8 +6,17 @@ import {
   selectIsAuthenticated,
   selectJournalError,
   selectJournalLoading,
+  selectNeedsSubscriptionOnboarding,
+  selectSubscriptionBootstrapping,
+  selectSubscriptionStatus,
+  selectSubscriptionError,
+  selectHasCapability,
+  PRODUCT_CAPABILITIES,
+  fetchSubscriptionContext,
   setActiveTab,
 } from '@/app/store';
+import { PricingOnboardingView } from '@/features/subscription/PricingOnboardingView';
+import { SubscriptionBootstrapScreen } from '@/features/subscription/components/SubscriptionBootstrapScreen';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { DashboardView } from '@/features/dashboard/DashboardView';
@@ -22,7 +31,22 @@ import { TradeEntryModal } from '@/features/trades/components/TradeEntryModal';
 import { TradeDetailModal } from '@/features/trades/components/TradeDetailModal';
 import { AuthView } from '@/features/auth/AuthView';
 
+const TAB_CAPABILITIES = {
+  dashboard: PRODUCT_CAPABILITIES.DASHBOARD,
+  analytics: PRODUCT_CAPABILITIES.ANALYTICS,
+  calendar: PRODUCT_CAPABILITIES.PNL_CALENDAR,
+  journal: PRODUCT_CAPABILITIES.JOURNAL,
+  tradelog: PRODUCT_CAPABILITIES.TRADE_LOG,
+  strategies: PRODUCT_CAPABILITIES.STRATEGIES,
+  markets: PRODUCT_CAPABILITIES.MARKETS,
+  'news-calendar': PRODUCT_CAPABILITIES.NEWS_CALENDAR,
+};
+
 export function MainContent({ activeTab, onNavigate }) {
+  const requiredCapability = TAB_CAPABILITIES[activeTab];
+  const hasCapability = useSelector((state) =>
+    requiredCapability ? selectHasCapability(state, requiredCapability) : true
+  );
   const loading = useSelector(selectJournalLoading);
   const error = useSelector(selectJournalError);
   const journalIndependentTab =
@@ -32,6 +56,14 @@ export function MainContent({ activeTab, onNavigate }) {
     activeTab === 'analytics' ||
     activeTab === 'journal';
   const showJournalLoading = loading && !journalIndependentTab;
+
+  if (!hasCapability) {
+    return (
+      <div className="rounded-xl border border-pit-border bg-pit-card p-6 text-sm text-slate-300">
+        This feature is not included in your current plan. Upgrade your subscription to access it.
+      </div>
+    );
+  }
 
   if (showJournalLoading) {
     return (
@@ -67,11 +99,32 @@ function AppShell() {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const activeTab = useSelector(selectActiveTab);
+  const subscriptionBootstrapping = useSelector(selectSubscriptionBootstrapping);
+  const subscriptionStatus = useSelector(selectSubscriptionStatus);
+  const subscriptionError = useSelector(selectSubscriptionError);
+  const needsOnboarding = useSelector(selectNeedsSubscriptionOnboarding);
 
   const navigate = (tab) => dispatch(setActiveTab(tab));
 
   if (!isAuthenticated) {
     return <AuthView />;
+  }
+
+  if (subscriptionBootstrapping) {
+    return <SubscriptionBootstrapScreen />;
+  }
+
+  if (subscriptionStatus === 'error') {
+    return (
+      <SubscriptionBootstrapScreen
+        error={subscriptionError}
+        onRetry={() => dispatch(fetchSubscriptionContext())}
+      />
+    );
+  }
+
+  if (needsOnboarding) {
+    return <PricingOnboardingView />;
   }
 
   return (
