@@ -172,6 +172,12 @@ export const mockSubscriptionMe = (overrides = {}) => ({
   ...overrides,
 });
 
+export const mockSubscriptionEntitlements = (overrides = {}) => ({
+  effectivePlanCode: 'FREE',
+  capabilities: [],
+  ...overrides,
+});
+
 export const mockSubscriptionPlans = () => [
   {
     code: 'FREE',
