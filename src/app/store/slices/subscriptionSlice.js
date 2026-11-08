@@ -103,6 +103,9 @@ const subscriptionSlice = createSlice({
       .addCase(startFreeTrial.fulfilled, (state, action) => {
         state.trialLoading = false;
         state.me = action.payload;
+        // The previous FREE entitlements are stale after trial activation.
+        // Clear them so selectors fall back to the newly returned effective plan.
+        state.entitlements = null;
       })
       .addCase(startFreeTrial.rejected, (state, action) => {
         state.trialLoading = false;
