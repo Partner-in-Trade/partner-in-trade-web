@@ -2,12 +2,14 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
   fetchSubscriptionMe,
   fetchSubscriptionPlans,
+  fetchSubscriptionEntitlements,
   postCheckout,
   postStartTrial,
 } from '@/features/subscription/api/subscriptionApi';
 import {
   mapCheckoutResponse,
   mapPlanCatalogue,
+  mapSubscriptionEntitlements,
   mapSubscriptionMe,
   parseSubscriptionError,
 } from '@/features/subscription/mappers/subscriptionMapper';
@@ -16,6 +18,7 @@ import { logout } from './authSlice';
 const initialState = {
   me: null,
   plans: [],
+  entitlements: null,
   status: 'idle',
   trialLoading: false,
   checkoutLoading: false,
@@ -26,10 +29,15 @@ export const fetchSubscriptionContext = createAsyncThunk(
   'subscription/fetchContext',
   async (_, { rejectWithValue }) => {
     try {
-      const [me, plans] = await Promise.all([fetchSubscriptionMe(), fetchSubscriptionPlans()]);
+      const [me, plans, entitlements] = await Promise.all([
+        fetchSubscriptionMe(),
+        fetchSubscriptionPlans(),
+        fetchSubscriptionEntitlements(),
+      ]);
       return {
         me: mapSubscriptionMe(me),
         plans: mapPlanCatalogue(plans),
+        entitlements: mapSubscriptionEntitlements(entitlements),
       };
     } catch (error) {
       return rejectWithValue(parseSubscriptionError(error));
@@ -82,6 +90,7 @@ const subscriptionSlice = createSlice({
         state.status = 'ready';
         state.me = action.payload.me;
         state.plans = action.payload.plans;
+        state.entitlements = action.payload.entitlements;
       })
       .addCase(fetchSubscriptionContext.rejected, (state, action) => {
         state.status = 'error';
