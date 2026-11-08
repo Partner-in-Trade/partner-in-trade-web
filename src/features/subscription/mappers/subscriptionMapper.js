@@ -16,8 +16,9 @@ export function mapSubscriptionMe(dto) {
 
 export function mapSubscriptionEntitlements(dto) {
   return {
-    effectivePlanCode: dto?.effectivePlanCode ?? 'FREE',
-    capabilities: Array.isArray(dto?.capabilities) ? dto.capabilities : [],
+    effectivePlanCode: dto?.effectivePlanCode ?? null,
+    // null means omitted by the API; an empty array remains an explicit restriction.
+    capabilities: Array.isArray(dto?.capabilities) ? dto.capabilities : null,
   };
 }
 
