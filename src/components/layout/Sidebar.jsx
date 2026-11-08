@@ -83,17 +83,19 @@ export function Sidebar({ activeTab, setActiveTab: setActiveTabProp }) {
           />
         </div>
 
-        <div className="p-4">
-          <button
-            type="button"
-            disabled={loading || !selectedMarket}
-            onClick={() => dispatch(openAddTradeModal())}
-            className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Log Trade
-          </button>
-        </div>
+        {canLogTrade && (
+          <div className="p-4">
+            <button
+              type="button"
+              disabled={loading || !selectedMarket}
+              onClick={() => dispatch(openAddTradeModal())}
+              className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Log Trade
+            </button>
+          </div>
+        )}
 
         <nav className="px-3 space-y-1">
           {visibleNavItems.map((item) => {
