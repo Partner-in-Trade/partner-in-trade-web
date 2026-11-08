@@ -5,6 +5,25 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { mockUser, mockEconomicEvents, mockSubscriptionMe } from '@/test/fixtures';
 import * as newsDayTimeline from '@/features/news/utils/newsDayTimeline';
 
+const trialSubscription = {
+  me: mockSubscriptionMe({ planCode: 'TRIAL', effectivePlanCode: 'TRIAL', onboardingCompleted: true }),
+  plans: [],
+  entitlements: null,
+  status: 'ready',
+  trialLoading: false,
+  checkoutLoading: false,
+  error: null,
+};
+
+const renderMainContent = (ui, options = {}) =>
+  renderWithProviders(ui, {
+    ...options,
+    preloadedState: {
+      ...options.preloadedState,
+      subscription: trialSubscription,
+    },
+  });
+
 describe('App', () => {
   it('shows AuthView when not authenticated', () => {
     renderWithProviders(<App />);
@@ -76,7 +95,7 @@ describe('App', () => {
       preloadedState: {
         auth: { user: mockUser, authError: null, authLoading: false },
         subscription: {
-          me: mockSubscriptionMe({ planCode: 'TRIAL', onboardingCompleted: true }),
+          me: mockSubscriptionMe({ planCode: 'TRIAL', effectivePlanCode: 'TRIAL', onboardingCompleted: true }),
           plans: [],
           status: 'ready',
           trialLoading: false,
@@ -115,7 +134,7 @@ describe('MainContent', () => {
   });
 
   it('renders AnalyticsView without waiting for journal bootstrap', () => {
-    renderWithProviders(
+    renderMainContent(
       <MainContent activeTab="analytics" onNavigate={() => {}} />,
       {
         preloadedState: {
@@ -142,7 +161,7 @@ describe('MainContent', () => {
   });
 
   it('shows journal loading state', () => {
-    renderWithProviders(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
+    renderMainContent(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
       preloadedState: {
         workspace: {
           markets: [],
@@ -165,7 +184,7 @@ describe('MainContent', () => {
   });
 
   it('skips journal loading on news calendar tab', () => {
-    renderWithProviders(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
+    renderMainContent(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
       preloadedState: {
         workspace: {
           markets: [],
@@ -195,7 +214,7 @@ describe('MainContent', () => {
   });
 
   it('skips journal error on news calendar tab', () => {
-    renderWithProviders(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
+    renderMainContent(<MainContent activeTab="news-calendar" onNavigate={() => {}} />, {
       preloadedState: {
         workspace: {
           markets: [],
@@ -225,7 +244,7 @@ describe('MainContent', () => {
   });
 
   it('shows journal error outside markets tab', () => {
-    renderWithProviders(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
+    renderMainContent(<MainContent activeTab="dashboard" onNavigate={() => {}} />, {
       preloadedState: {
         workspace: {
           markets: [],
