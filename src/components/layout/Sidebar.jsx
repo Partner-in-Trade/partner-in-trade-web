@@ -2,7 +2,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   LayoutDashboard,
-  ChartLine,
+  BarChart3,
   Calendar as CalendarIcon,
   Table2,
   Wallet,
@@ -35,7 +35,7 @@ import { JournalSidebarPanel } from '@/features/journal/components/JournalSideba
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'analytics', label: 'Analytics', icon: ChartLine },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'calendar', label: 'P&L Calendar', icon: CalendarIcon },
   { id: 'journal', label: 'Journal', icon: BookOpen, expandable: true },
   { id: 'tradelog', label: 'Trade Log', icon: Table2 },
