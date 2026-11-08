@@ -12,6 +12,7 @@ import {
 } from '@/app/store';
 import { openRazorpaySubscriptionCheckout } from '@/features/subscription/razorpay/loadRazorpayCheckout';
 import { fetchSubscriptionMe } from '@/features/subscription/api/subscriptionApi';
+import { waitForSubscriptionActivation } from '@/features/subscription/razorpay/waitForSubscriptionActivation';
 import { TrialHeroSection } from './components/TrialHeroSection';
 import { PlanCardsSection } from './components/PlanCardsSection';
 import {
@@ -21,23 +22,6 @@ import {
 import { TrustFaqSection } from './components/TrustFaqSection';
 import { PricingFooterCta } from './components/PricingFooterCta';
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function waitForSubscriptionActivation(planCode) {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    try {
-      const subscription = await fetchSubscriptionMe();
-      if (subscription?.status === 'ACTIVE' && subscription?.effectivePlanCode === planCode) {
-        return true;
-      }
-    } catch {
-      // Webhook processing and short-lived API/network failures can overlap.
-      // Keep polling; the final refresh below will surface the latest state.
-    }
-    if (attempt < 9) await delay(1500);
-  }
-  return false;
-}
 
 export function PricingOnboardingView() {
   const dispatch = useDispatch();
@@ -75,7 +59,7 @@ export function PricingOnboardingView() {
         keyId: payload.keyId,
         subscriptionId: payload.subscriptionId,
       });
-      const activated = await waitForSubscriptionActivation(planCode);
+      const activated = await waitForSubscriptionActivation({ planCode, fetchSubscriptionMe });
       await dispatch(fetchSubscriptionContext());
       setCheckoutSyncPending(!activated);
       setCheckoutMessage(activated ? '' : 'Payment confirmation is still pending with the payment provider. Your plan will unlock only after the backend verifies it.');
