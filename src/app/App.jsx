@@ -8,6 +8,9 @@ import {
   selectJournalLoading,
   selectNeedsSubscriptionOnboarding,
   selectSubscriptionBootstrapping,
+  selectSubscriptionStatus,
+  selectSubscriptionError,
+  fetchSubscriptionContext,
   setActiveTab,
 } from '@/app/store';
 import { PricingOnboardingView } from '@/features/subscription/PricingOnboardingView';
@@ -72,6 +75,8 @@ function AppShell() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const activeTab = useSelector(selectActiveTab);
   const subscriptionBootstrapping = useSelector(selectSubscriptionBootstrapping);
+  const subscriptionStatus = useSelector(selectSubscriptionStatus);
+  const subscriptionError = useSelector(selectSubscriptionError);
   const needsOnboarding = useSelector(selectNeedsSubscriptionOnboarding);
 
   const navigate = (tab) => dispatch(setActiveTab(tab));
@@ -82,6 +87,15 @@ function AppShell() {
 
   if (subscriptionBootstrapping) {
     return <SubscriptionBootstrapScreen />;
+  }
+
+  if (subscriptionStatus === 'error') {
+    return (
+      <SubscriptionBootstrapScreen
+        error={subscriptionError}
+        onRetry={() => dispatch(fetchSubscriptionContext())}
+      />
+    );
   }
 
   if (needsOnboarding) {
