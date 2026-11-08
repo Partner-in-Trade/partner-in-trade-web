@@ -215,4 +215,120 @@ describe('StrategiesView', () => {
     expect(screen.getByText('VWAP Bounce')).toBeInTheDocument();
   });
 
+
+  it('does not send a delete request when confirmation is cancelled', async () => {
+    let deleteCalls = 0;
+    server.use(
+      http.get(`${API_BASE}/strategies/:strategyId/trades`, () => HttpResponse.json([])),
+      http.delete(`${API_BASE}/strategies/:strategyId`, () => {
+        deleteCalls += 1;
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    renderWithProviders(<StrategiesView />, { preloadedState: preloaded() });
+    fireEvent.click(screen.getByRole('button', { name: /Open playbook/i }));
+    const deleteButton = await screen.findByRole('button', { name: /^Delete$/i });
+    await waitFor(() => expect(deleteButton).toBeEnabled());
+    fireEvent.click(deleteButton);
+
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(deleteCalls).toBe(0);
+    expect(screen.getByText('VWAP Bounce')).toBeInTheDocument();
+    confirm.mockRestore();
+  });
+
+  it('deletes a strategy after confirmation and removes it from the workspace', async () => {
+    let deleteCalls = 0;
+    server.use(
+      http.get(`${API_BASE}/strategies/:strategyId/trades`, () => HttpResponse.json([])),
+      http.delete(`${API_BASE}/strategies/:strategyId`, () => {
+        deleteCalls += 1;
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderWithProviders(<StrategiesView />, { preloadedState: preloaded() });
+    fireEvent.click(screen.getByRole('button', { name: /Open playbook/i }));
+    const deleteButton = await screen.findByRole('button', { name: /^Delete$/i });
+    await waitFor(() => expect(deleteButton).toBeEnabled());
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(deleteCalls).toBe(1);
+      expect(screen.queryByRole('button', { name: /Open playbook/i })).not.toBeInTheDocument();
+    });
+    confirm.mockRestore();
+  });
+
+  it('keeps the strategy when the delete API fails', async () => {
+    server.use(
+      http.get(`${API_BASE}/strategies/:strategyId/trades`, () => HttpResponse.json([])),
+      http.delete(`${API_BASE}/strategies/:strategyId`, () =>
+        HttpResponse.json({ message: 'Strategy deletion rejected' }, { status: 409 })
+      )
+    );
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderWithProviders(<StrategiesView />, { preloadedState: preloaded() });
+    fireEvent.click(screen.getByRole('button', { name: /Open playbook/i }));
+    const deleteButton = await screen.findByRole('button', { name: /^Delete$/i });
+    await waitFor(() => expect(deleteButton).toBeEnabled());
+    fireEvent.click(deleteButton);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Strategy deletion rejected');
+    expect(screen.getByText('VWAP Bounce')).toBeInTheDocument();
+    confirm.mockRestore();
+  });
+
+  it('blocks deletion when the strategy has linked trades', async () => {
+    let deleteCalls = 0;
+    server.use(
+      http.get(`${API_BASE}/strategies/:strategyId/trades`, () =>
+        HttpResponse.json([{
+          id: 'trade-1',
+          entryDate: '2026-11-08T10:00:00',
+          symbol: 'NIFTY',
+          direction: 'LONG',
+          currency: 'INR',
+          entryPrice: 24000,
+          positionSize: 1,
+          marketId: 10,
+          strategyId: 5,
+          strategyUsed: 'VWAP Bounce',
+          marketName: 'Acct',
+          status: 'OPEN',
+        }])
+      ),
+      http.delete(`${API_BASE}/strategies/:strategyId`, () => {
+        deleteCalls += 1;
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
+
+    renderWithProviders(<StrategiesView />, { preloadedState: preloaded() });
+    fireEvent.click(screen.getByRole('button', { name: /Open playbook/i }));
+
+    const deleteButton = await screen.findByRole('button', { name: /^Delete$/i });
+    await waitFor(() => expect(deleteButton).toBeDisabled());
+    expect(screen.getByText(/1 linked trade/i)).toBeInTheDocument();
+    expect(deleteCalls).toBe(0);
+  });
+
+  it('keeps deletion disabled if linked trades cannot be verified', async () => {
+    server.use(
+      http.get(`${API_BASE}/strategies/:strategyId/trades`, () =>
+        HttpResponse.json({ message: 'Trade lookup unavailable' }, { status: 503 })
+      )
+    );
+
+    renderWithProviders(<StrategiesView />, { preloadedState: preloaded() });
+    fireEvent.click(screen.getByRole('button', { name: /Open playbook/i }));
+
+    const deleteButton = await screen.findByRole('button', { name: /^Delete$/i });
+    await waitFor(() => expect(deleteButton).toBeDisabled());
+    expect(screen.getByText(/Deletion is disabled until they can be loaded/i)).toBeInTheDocument();
+  });
 });
