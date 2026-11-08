@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchSubscriptionContext,
@@ -11,6 +11,7 @@ import {
   clearSubscriptionError,
 } from '@/app/store';
 import { openRazorpaySubscriptionCheckout } from '@/features/subscription/razorpay/loadRazorpayCheckout';
+import { fetchSubscriptionMe } from '@/features/subscription/api/subscriptionApi';
 import { TrialHeroSection } from './components/TrialHeroSection';
 import { PlanCardsSection } from './components/PlanCardsSection';
 import {
@@ -20,8 +21,22 @@ import {
 import { TrustFaqSection } from './components/TrustFaqSection';
 import { PricingFooterCta } from './components/PricingFooterCta';
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function waitForSubscriptionActivation(planCode) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const subscription = await fetchSubscriptionMe();
+    if (subscription?.status === 'ACTIVE' && subscription?.planCode === planCode) {
+      return true;
+    }
+    if (attempt < 9) await delay(1500);
+  }
+  return false;
+}
+
 export function PricingOnboardingView() {
   const dispatch = useDispatch();
+  const [checkoutSyncPending, setCheckoutSyncPending] = useState(false);
   const compareRef = useRef(null);
   const plans = useSelector(selectSubscriptionPlans);
   const trialLoading = useSelector(selectTrialLoading);
@@ -42,6 +57,7 @@ export function PricingOnboardingView() {
 
   const handleCheckout = async (planCode) => {
     dispatch(clearSubscriptionError());
+    setCheckoutSyncPending(false);
     const result = await dispatch(startCheckout(planCode));
     if (!startCheckout.fulfilled.match(result)) return;
     const payload = result.payload;
@@ -50,7 +66,9 @@ export function PricingOnboardingView() {
         keyId: payload.keyId,
         subscriptionId: payload.subscriptionId,
       });
+      const activated = await waitForSubscriptionActivation(planCode);
       await dispatch(fetchSubscriptionContext());
+      setCheckoutSyncPending(!activated);
     } catch (e) {
       console.warn('Checkout flow:', e);
       await dispatch(fetchSubscriptionContext());
@@ -68,6 +86,11 @@ export function PricingOnboardingView() {
         checkoutLoading={checkoutLoading}
       />
       <ComparePlansSection compareRef={compareRef} />
+      {checkoutSyncPending && (
+        <p className="text-center text-sm text-amber-300 px-4" role="status">
+          Checkout completed. Your subscription is still being activated; please refresh in a moment.
+        </p>
+      )}
       {error && (
         <p className="text-center text-sm text-rose-400 px-4" role="alert">
           {error.message}
