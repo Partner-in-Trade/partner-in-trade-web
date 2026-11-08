@@ -85,6 +85,7 @@ export function StrategiesView() {
   const [uiPrefs, setUiPrefs] = useState(() => loadStrategyUiPrefs());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailStrategy, setDetailStrategy] = useState(null);
+  const [editingStrategy, setEditingStrategy] = useState(null);
 
   useEffect(() => {
     if (trimmedSearch === loadedSearch) {
@@ -317,11 +318,17 @@ export function StrategiesView() {
         </div>
       )}
 
-      <StrategyCreateDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <StrategyCreateDrawer
+        open={drawerOpen || editingStrategy != null}
+        strategy={editingStrategy}
+        onClose={() => { setDrawerOpen(false); setEditingStrategy(null); }}
+        onUpdated={() => { setDetailStrategy(null); setEditingStrategy(null); }}
+      />
       <StrategyDetailDrawer
         open={detailStrategy != null}
         strategy={detailStrategy}
         onClose={() => setDetailStrategy(null)}
+        onEdit={(strategy) => { setDetailStrategy(null); setEditingStrategy(strategy); }}
       />
     </div>
   );

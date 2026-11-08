@@ -44,7 +44,7 @@ function parseBoolSelect(value) {
   return null;
 }
 
-export function StrategyCreateDrawer({ open, onClose, onCreated }) {
+export function StrategyCreateDrawer({ open, onClose, onCreated, strategy = null, onUpdated }) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const [form, setForm] = useState(defaultForm);
@@ -52,8 +52,26 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
   const [toast, setToast] = useState('');
 
   useEffect(() => {
-    if (open) setForm(defaultForm());
-  }, [open]);
+    if (!open) return;
+    if (!strategy) {
+      setForm(defaultForm());
+      return;
+    }
+    setForm({
+      ...defaultForm(),
+      name: strategy.name || '',
+      description: strategy.description || '',
+      tags: strategy.tags || [],
+      rulesSetup: strategy.rulesSetup || '',
+      worksInTrendingMarket: strategy.worksInTrendingMarket == null ? '' : strategy.worksInTrendingMarket ? 'yes' : 'no',
+      worksInRangingMarket: strategy.worksInRangingMarket == null ? '' : strategy.worksInRangingMarket ? 'yes' : 'no',
+      marketTypes: strategy.marketTypes || [],
+      timeframes: strategy.timeframes || (strategy.timeframe ? [strategy.timeframe] : ['15m']),
+      sessions: strategy.sessions || [],
+      preferredSymbols: (strategy.preferredSymbols || []).join(', '),
+      riskNotes: strategy.riskNotes || '',
+    });
+  }, [open, strategy]);
 
   if (!open) return null;
 
@@ -111,9 +129,18 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
 
     setSubmitting(true);
     try {
-      const res = await strategiesApi.create(buildPayload(isActive));
+      const payload = buildPayload(isActive);
+      const res = strategy?.id != null
+        ? await strategiesApi.update(strategy.id, {
+            ...payload,
+            type: strategy.type || 'Custom',
+            imageUrl: strategy.imageUrl || null,
+            timeframe: payload.timeframes[0] || strategy.timeframe || null,
+          })
+        : await strategiesApi.create(payload);
       dispatch(registerStrategyInWorkspace(res.data));
-      onCreated?.(res.data);
+      if (strategy?.id != null) onUpdated?.(res.data);
+      else onCreated?.(res.data);
       onClose();
     } catch (err) {
       const msg =
@@ -133,13 +160,13 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
         <button
           type="button"
           className="absolute inset-0 bg-black/50"
-          aria-label="Close create strategy panel"
+          aria-label="Close strategy panel"
           onClick={onClose}
         />
         <aside className="relative flex h-full w-full max-w-xl flex-col border-l border-pit-border bg-pit-card shadow-2xl animate-slide-in-right">
           <header className="flex shrink-0 items-center justify-between border-b border-pit-border px-5 py-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Create New Strategy</h2>
+              <h2 className="text-lg font-semibold text-white">{strategy ? 'Edit Strategy' : 'Create New Strategy'}</h2>
               <p className="text-xs text-slate-400">Define your setup rules and context</p>
             </div>
             <button
@@ -374,7 +401,7 @@ export function StrategyCreateDrawer({ open, onClose, onCreated }) {
                 disabled={submitting}
                 className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
               >
-                {submitting ? 'Saving…' : 'Save & activate'}
+                {submitting ? 'Saving…' : strategy ? 'Update & activate' : 'Save & activate'}
               </button>
             </footer>
           </form>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Target, X } from 'lucide-react';
+import { ArrowLeft, Target, X, Pencil } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectSelectedMarket, setSelectedTrade } from '@/app/store';
 import { OutcomeBadge } from '@/components/ui/OutcomeBadge';
@@ -30,7 +30,7 @@ function formatPnl(amount, currency) {
   return `${n >= 0 ? '+' : '-'}${sym}${formatted}`;
 }
 
-export function StrategyDetailDrawer({ open, strategy, onClose }) {
+export function StrategyDetailDrawer({ open, strategy, onClose, onEdit }) {
   const dispatch = useDispatch();
   const selectedMarket = useSelector(selectSelectedMarket);
   const currency = selectedMarket?.currency || 'USD';
@@ -104,6 +104,15 @@ export function StrategyDetailDrawer({ open, strategy, onClose }) {
               <p className="text-xs text-slate-400">Playbook details & linked trades</p>
             </div>
           </div>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(strategy)}
+              className="inline-flex items-center gap-2 rounded-lg border border-pit-border px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-pit-bg"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}

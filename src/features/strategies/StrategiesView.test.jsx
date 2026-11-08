@@ -160,4 +160,59 @@ describe('StrategiesView', () => {
       expect(screen.getByText(/Strategy name is required/i)).toBeInTheDocument();
     });
   });
+
+
+  it('opens an existing strategy in edit mode and persists the mapped update payload', async () => {
+    let received;
+    server.use(
+      http.put(`${API_BASE}/strategies/:strategyId`, async ({ params, request }) => {
+        received = { id: Number(params.strategyId), body: await request.json() };
+        return HttpResponse.json({ ...mockStrategy, ...received.body, id: Number(params.strategyId) });
+      })
+    );
+
+    renderWithProviders(<StrategiesView />, { preloadedState: preloaded() });
+    fireEvent.click(screen.getByRole('button', { name: /Open playbook/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit$/i }));
+
+    fireEvent.change(screen.getByPlaceholderText('Liquidity Sweep'), {
+      target: { value: 'VWAP Reclaim' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Update & activate/i }));
+
+    await waitFor(() => {
+      expect(received).toBeDefined();
+      expect(received.id).toBe(5);
+      expect(received.body).toMatchObject({
+        name: 'VWAP Reclaim',
+        description: 'Mean reversion setup',
+        rulesSetup: 'Wait for VWAP touch',
+        tags: ['VWAP'],
+        marketTypes: ['Stocks'],
+        type: 'Custom',
+      });
+      expect(screen.getByText('VWAP Reclaim')).toBeInTheDocument();
+    });
+  });
+
+  it('shows the update API error and keeps the existing strategy unchanged', async () => {
+    server.use(
+      http.put(`${API_BASE}/strategies/:strategyId`, () =>
+        HttpResponse.json({ message: 'Strategy update rejected' }, { status: 400 })
+      )
+    );
+
+    renderWithProviders(<StrategiesView />, { preloadedState: preloaded() });
+    fireEvent.click(screen.getByRole('button', { name: /Open playbook/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Edit$/i }));
+    fireEvent.change(screen.getByPlaceholderText('Liquidity Sweep'), {
+      target: { value: 'Changed name' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Update & activate/i }));
+
+    expect(await screen.findByText('Strategy update rejected')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Changed name')).toBeInTheDocument();
+    expect(screen.getByText('VWAP Bounce')).toBeInTheDocument();
+  });
+
 });
