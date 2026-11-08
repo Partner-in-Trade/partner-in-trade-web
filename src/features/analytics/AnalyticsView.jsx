@@ -12,6 +12,7 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { EquityCurveChart } from '@/features/dashboard/components/EquityCurveChart';
 import { DailyPnlChart } from '@/features/dashboard/components/DailyPnlChart';
 import { PlaybookBreakdownTable } from './components/PlaybookBreakdownTable';
+import { ClosedTradePerformanceTable } from './components/ClosedTradePerformanceTable';
 
 function formatMoney(value, currency) {
   return new Intl.NumberFormat(undefined, {
@@ -64,6 +65,7 @@ export function AnalyticsView() {
         <EquityCurveChart data={ready ? analytics?.equityCurve || [] : []} currency={currency} />
         <DailyPnlChart data={ready ? analytics?.dailySeries || [] : []} currency={currency} />
       </div>
+      <ClosedTradePerformanceTable />
       <PlaybookBreakdownTable />
     </div>
   );
