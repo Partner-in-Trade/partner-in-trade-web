@@ -24,3 +24,8 @@ export async function postCheckout(planCode) {
   const { data } = await apiClient.post('/subscriptions/checkout', { planCode });
   return data;
 }
+
+export async function postCancelSubscription() {
+  const { data } = await apiClient.post('/subscriptions/cancel');
+  return data;
+}
