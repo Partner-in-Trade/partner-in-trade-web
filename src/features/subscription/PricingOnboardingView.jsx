@@ -27,7 +27,7 @@ async function waitForSubscriptionActivation(planCode) {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     try {
       const subscription = await fetchSubscriptionMe();
-      if (subscription?.status === 'ACTIVE' && subscription?.planCode === planCode) {
+      if (subscription?.status === 'ACTIVE' && subscription?.effectivePlanCode === planCode) {
         return true;
       }
     } catch {
@@ -42,6 +42,7 @@ async function waitForSubscriptionActivation(planCode) {
 export function PricingOnboardingView() {
   const dispatch = useDispatch();
   const [checkoutSyncPending, setCheckoutSyncPending] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState('');
   const compareRef = useRef(null);
   const plans = useSelector(selectSubscriptionPlans);
   const trialLoading = useSelector(selectTrialLoading);
@@ -63,10 +64,13 @@ export function PricingOnboardingView() {
   const handleCheckout = async (planCode) => {
     dispatch(clearSubscriptionError());
     setCheckoutSyncPending(false);
+    setCheckoutMessage('');
     const result = await dispatch(startCheckout(planCode));
     if (!startCheckout.fulfilled.match(result)) return;
     const payload = result.payload;
     try {
+      // Razorpay's client callback is not authoritative. Only the backend's
+      // verified subscription state can activate plan capabilities.
       await openRazorpaySubscriptionCheckout({
         keyId: payload.keyId,
         subscriptionId: payload.subscriptionId,
@@ -74,9 +78,18 @@ export function PricingOnboardingView() {
       const activated = await waitForSubscriptionActivation(planCode);
       await dispatch(fetchSubscriptionContext());
       setCheckoutSyncPending(!activated);
+      setCheckoutMessage(activated ? '' : 'Payment confirmation is still pending with the payment provider. Your plan will unlock only after the backend verifies it.');
     } catch (e) {
       console.warn('Checkout flow:', e);
       await dispatch(fetchSubscriptionContext());
+      setCheckoutSyncPending(false);
+      setCheckoutMessage(
+        e?.message === 'Checkout dismissed'
+          ? 'Checkout was closed. No paid access was granted.'
+          : e?.message === 'Payment failed'
+            ? 'Payment failed. No paid access was granted.'
+            : 'Checkout could not be completed. Subscription access was not changed unless confirmed by the server.'
+      );
     }
   };
 
