@@ -235,7 +235,7 @@ describe('StrategiesView', () => {
 
     expect(confirm).toHaveBeenCalledOnce();
     expect(deleteCalls).toBe(0);
-    expect(screen.getByText('VWAP Bounce')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'VWAP Bounce', level: 2 })).toBeInTheDocument();
     confirm.mockRestore();
   });
 
@@ -279,7 +279,7 @@ describe('StrategiesView', () => {
     fireEvent.click(deleteButton);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Strategy deletion rejected');
-    expect(screen.getByText('VWAP Bounce')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'VWAP Bounce', level: 2 })).toBeInTheDocument();
     confirm.mockRestore();
   });
 
