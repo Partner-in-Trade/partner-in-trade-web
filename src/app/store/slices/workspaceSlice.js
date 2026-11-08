@@ -305,13 +305,13 @@ const workspaceSlice = createSlice({
         state.strategiesLoading = false;
         state.strategiesInFlightSearch = null;
         state.strategies = strategies.filter(
-          (strategy) => !state.deletedStrategyIds.includes(Number(strategy.id))
+          (strategy) => !(state.deletedStrategyIds || []).includes(Number(strategy.id))
         );
         state.strategiesLoadedSearch = searchQuery;
         if (searchQuery === '') {
           state.strategiesByName = Object.fromEntries(
             Object.entries(strategiesByName).filter(
-              ([, id]) => !state.deletedStrategyIds.includes(Number(id))
+              ([, id]) => !(state.deletedStrategyIds || []).includes(Number(id))
             )
           );
         }
