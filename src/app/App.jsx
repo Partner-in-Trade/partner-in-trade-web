@@ -6,8 +6,12 @@ import {
   selectIsAuthenticated,
   selectJournalError,
   selectJournalLoading,
+  selectNeedsSubscriptionOnboarding,
+  selectSubscriptionBootstrapping,
   setActiveTab,
 } from '@/app/store';
+import { PricingOnboardingView } from '@/features/subscription/PricingOnboardingView';
+import { SubscriptionBootstrapScreen } from '@/features/subscription/components/SubscriptionBootstrapScreen';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { DashboardView } from '@/features/dashboard/DashboardView';
@@ -67,11 +71,21 @@ function AppShell() {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const activeTab = useSelector(selectActiveTab);
+  const subscriptionBootstrapping = useSelector(selectSubscriptionBootstrapping);
+  const needsOnboarding = useSelector(selectNeedsSubscriptionOnboarding);
 
   const navigate = (tab) => dispatch(setActiveTab(tab));
 
   if (!isAuthenticated) {
     return <AuthView />;
+  }
+
+  if (subscriptionBootstrapping) {
+    return <SubscriptionBootstrapScreen />;
+  }
+
+  if (needsOnboarding) {
+    return <PricingOnboardingView />;
   }
 
   return (

@@ -61,6 +61,30 @@ export const selectJournalError = (state) =>
 
 export const selectActiveTab = (state) => state.ui.activeTab;
 
+export const selectSubscriptionMe = (state) => state.subscription?.me ?? null;
+export const selectSubscriptionPlans = (state) => state.subscription?.plans ?? [];
+export const selectSubscriptionStatus = (state) => state.subscription?.status ?? 'idle';
+export const selectSubscriptionError = (state) => state.subscription?.error ?? null;
+export const selectTrialLoading = (state) => state.subscription?.trialLoading ?? false;
+export const selectCheckoutLoading = (state) => state.subscription?.checkoutLoading ?? false;
+
+export const selectSubscriptionBootstrapping = (state) =>
+  selectIsAuthenticated(state) && selectSubscriptionStatus(state) === 'loading';
+
+function subscriptionGrantsWorkspace(me) {
+  if (!me?.planCode) return false;
+  return me.planCode !== 'FREE';
+}
+
+export const selectNeedsSubscriptionOnboarding = (state) =>
+  selectSubscriptionStatus(state) === 'ready' &&
+  selectSubscriptionMe(state) &&
+  !subscriptionGrantsWorkspace(selectSubscriptionMe(state));
+
+export const selectOnboardingComplete = (state) =>
+  selectSubscriptionStatus(state) === 'ready' &&
+  subscriptionGrantsWorkspace(selectSubscriptionMe(state));
+
 // Sorting is presentation-only; financial metrics remain sourced from the backend.
 export const selectEnrichedTrades = createSelector(
   [selectRawTrades, selectAnalytics],

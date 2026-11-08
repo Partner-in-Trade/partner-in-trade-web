@@ -4,6 +4,8 @@ import {
   selectEnrichedTrades,
   selectJournalLoading,
   selectJournalError,
+  selectNeedsSubscriptionOnboarding,
+  selectOnboardingComplete,
 } from './selectors';
 describe('selectors', () => {
   const baseState = {
@@ -27,6 +29,10 @@ describe('selectors', () => {
       selectedTrade: null,
     },
     ui: { activeTab: 'dashboard' },
+    subscription: {
+      me: { planCode: 'FREE' },
+      status: 'ready',
+    },
   };
 
   it('selectSelectedMarket finds market by id', () => {
@@ -37,6 +43,17 @@ describe('selectors', () => {
     const trades = selectEnrichedTrades(baseState);
     expect(trades[0].id).toBe('2');
     expect(trades.map((trade) => trade.id)).toEqual(['2', '1']);
+  });
+
+  it('gates workspace until plan is not FREE', () => {
+    expect(selectNeedsSubscriptionOnboarding(baseState)).toBe(true);
+    expect(selectOnboardingComplete(baseState)).toBe(false);
+    const trial = {
+      ...baseState,
+      subscription: { me: { planCode: 'TRIAL' }, status: 'ready' },
+    };
+    expect(selectNeedsSubscriptionOnboarding(trial)).toBe(false);
+    expect(selectOnboardingComplete(trial)).toBe(true);
   });
 
   it('selectJournalLoading and selectJournalError combine workspace and trades', () => {

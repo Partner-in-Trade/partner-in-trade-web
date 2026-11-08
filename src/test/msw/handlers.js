@@ -5,6 +5,8 @@ import {
   mockMarkets,
   mockEconomicEvents,
   strategiesListResponse,
+  mockSubscriptionMe,
+  mockSubscriptionPlans,
 } from '../fixtures';
 
 export const API_BASE = 'http://localhost:8080/api/v1';
@@ -180,6 +182,25 @@ export const handlers = [
     return HttpResponse.json({
       journalDate: params.date,
       ...body,
+    });
+  }),
+
+  http.get(`${API_BASE}/subscriptions/me`, () => HttpResponse.json(mockSubscriptionMe())),
+
+  http.get(`${API_BASE}/subscriptions/plans`, () => HttpResponse.json(mockSubscriptionPlans())),
+
+  http.post(`${API_BASE}/subscriptions/start-trial`, () =>
+    HttpResponse.json(mockSubscriptionMe({ planCode: 'TRIAL', onboardingCompleted: true }))
+  ),
+
+  http.post(`${API_BASE}/subscriptions/checkout`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json({
+      keyId: 'rzp_test_mock',
+      subscriptionId: 'sub_mock',
+      planCode: body.planCode,
+      shortUrl: null,
+      status: 'created',
     });
   }),
 ];

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import App, { MainContent } from './App';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { mockUser, mockEconomicEvents } from '@/test/fixtures';
+import { mockUser, mockEconomicEvents, mockSubscriptionMe } from '@/test/fixtures';
 import * as newsDayTimeline from '@/features/news/utils/newsDayTimeline';
 
 describe('App', () => {
@@ -11,10 +11,53 @@ describe('App', () => {
     expect(screen.getByText('Sign In to Dashboard')).toBeInTheDocument();
   });
 
-  it('shows app shell when authenticated', () => {
+  it('shows pricing onboarding when authenticated on FREE plan', () => {
     renderWithProviders(<App />, {
       preloadedState: {
         auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: mockSubscriptionMe({ planCode: 'FREE', onboardingCompleted: false }),
+          plans: [],
+          status: 'ready',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: null,
+        },
+      },
+    });
+    expect(screen.getByText('Simple pricing for serious traders')).toBeInTheDocument();
+    expect(screen.queryByText('Performance Overview')).not.toBeInTheDocument();
+  });
+
+  it('keeps FREE users on pricing even if onboarding flag is stale', () => {
+    renderWithProviders(<App />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: mockSubscriptionMe({ planCode: 'FREE', onboardingCompleted: true }),
+          plans: [],
+          status: 'ready',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: null,
+        },
+      },
+    });
+    expect(screen.getByText('Simple pricing for serious traders')).toBeInTheDocument();
+  });
+
+  it('shows app shell when authenticated on trial or paid plan', () => {
+    renderWithProviders(<App />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: mockSubscriptionMe({ planCode: 'TRIAL', onboardingCompleted: true }),
+          plans: [],
+          status: 'ready',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: null,
+        },
         workspace: {
           markets: [{ id: 10, name: 'Forex', currency: 'USD', funds: 1000 }],
           selectedMarketId: 10,
