@@ -24,6 +24,7 @@ const initialWorkspaceState = {
   strategiesLoadedSearch: '',
   strategiesInFlightSearch: null,
   strategiesLatestRequestId: null,
+  deletedStrategyIds: [],
   strategiesLoading: false,
   strategiesError: null,
   workspaceLoading: false,
@@ -172,6 +173,9 @@ const workspaceSlice = createSlice({
       const strategy = action.payload;
       if (!strategy || strategy.id == null) return;
       const { name, id } = strategy;
+      state.deletedStrategyIds = (state.deletedStrategyIds || []).filter(
+        (deletedId) => Number(deletedId) !== Number(id)
+      );
       if (name) {
         state.strategiesByName[name] = id;
       }
@@ -180,6 +184,25 @@ const workspaceSlice = createSlice({
         state.strategies[idx] = { ...state.strategies[idx], ...strategy };
       } else {
         state.strategies.push(strategy);
+      }
+    },
+    removeStrategyFromWorkspace(state, action) {
+      const strategyId = Number(action.payload);
+      const deleted = state.strategies.find((strategy) => Number(strategy.id) === strategyId);
+      state.strategies = state.strategies.filter(
+        (strategy) => Number(strategy.id) !== strategyId
+      );
+      state.deletedStrategyIds = state.deletedStrategyIds || [];
+      if (!state.deletedStrategyIds.includes(strategyId)) {
+        state.deletedStrategyIds.push(strategyId);
+      }
+      // Invalidate any request started before deletion so its stale response
+      // cannot replace the updated list.
+      state.strategiesLatestRequestId = null;
+      state.strategiesLoading = false;
+      state.strategiesInFlightSearch = null;
+      if (deleted?.name && Number(state.strategiesByName[deleted.name]) === strategyId) {
+        delete state.strategiesByName[deleted.name];
       }
     },
     setStrategiesSearch(state, action) {
@@ -200,8 +223,14 @@ const workspaceSlice = createSlice({
         const { marketList, strategies, strategyMap } = action.payload;
         state.workspaceLoading = false;
         state.markets = marketList;
-        state.strategies = strategies;
-        state.strategiesByName = strategyMap;
+        state.strategies = strategies.filter(
+          (strategy) => !(state.deletedStrategyIds || []).includes(Number(strategy.id))
+        );
+        state.strategiesByName = Object.fromEntries(
+          Object.entries(strategyMap).filter(
+            ([, id]) => !(state.deletedStrategyIds || []).includes(Number(id))
+          )
+        );
         state.strategiesLoadedSearch = '';
         state.strategiesSearch = '';
         state.strategiesInFlightSearch = null;
@@ -275,10 +304,16 @@ const workspaceSlice = createSlice({
         const { strategies, strategiesByName, searchQuery } = action.payload;
         state.strategiesLoading = false;
         state.strategiesInFlightSearch = null;
-        state.strategies = strategies;
+        state.strategies = strategies.filter(
+          (strategy) => !(state.deletedStrategyIds || []).includes(Number(strategy.id))
+        );
         state.strategiesLoadedSearch = searchQuery;
         if (searchQuery === '') {
-          state.strategiesByName = strategiesByName;
+          state.strategiesByName = Object.fromEntries(
+            Object.entries(strategiesByName).filter(
+              ([, id]) => !(state.deletedStrategyIds || []).includes(Number(id))
+            )
+          );
         }
       })
       .addCase(fetchStrategies.rejected, (state, action) => {
@@ -296,6 +331,7 @@ export const {
   setSelectedMarketId,
   resetWorkspace,
   registerStrategyInWorkspace,
+  removeStrategyFromWorkspace,
   setStrategiesSearch,
 } = workspaceSlice.actions;
 export default workspaceSlice.reducer;

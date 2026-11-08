@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Target, X, Pencil } from 'lucide-react';
+import { ArrowLeft, Target, X, Pencil, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectSelectedMarket, setSelectedTrade } from '@/app/store';
+import { selectSelectedMarket, setSelectedTrade, removeStrategyFromWorkspace } from '@/app/store';
 import { OutcomeBadge } from '@/components/ui/OutcomeBadge';
 import { strategiesApi } from '@/features/strategies/api/strategiesApi';
 import { apiTradeToUi } from '@/lib/mappers/tradeMapper';
@@ -38,6 +38,8 @@ export function StrategyDetailDrawer({ open, strategy, onClose, onEdit }) {
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     if (!open || strategy?.id == null) {
@@ -46,6 +48,7 @@ export function StrategyDetailDrawer({ open, strategy, onClose, onEdit }) {
     let cancelled = false;
     setLoading(true);
     setError('');
+    setDeleteError('');
     setTrades([]);
 
     strategiesApi
@@ -67,6 +70,28 @@ export function StrategyDetailDrawer({ open, strategy, onClose, onEdit }) {
       cancelled = true;
     };
   }, [open, strategy?.id]);
+
+  const handleDelete = async () => {
+    if (!strategy || loading || error || trades.length > 0 || deleting) return;
+    const confirmed = window.confirm(
+      `Delete “${strategy.name}”? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await strategiesApi.delete(strategy.id);
+      dispatch(removeStrategyFromWorkspace(strategy.id));
+      onClose();
+    } catch (e) {
+      setDeleteError(
+        e.response?.data?.message || e.message || 'Could not delete this strategy. Please try again.'
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const perf = useMemo(() => {
     if (!strategy) return { tradeCount: 0, wins: 0, netPnl: 0 };
@@ -104,6 +129,16 @@ export function StrategyDetailDrawer({ open, strategy, onClose, onEdit }) {
               <p className="text-xs text-slate-400">Playbook details & linked trades</p>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={loading || Boolean(error) || trades.length > 0 || deleting}
+            title={trades.length > 0 ? 'This strategy has linked trades and cannot be deleted.' : undefined}
+            className="inline-flex items-center gap-2 rounded-lg border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {deleting ? 'Deleting…' : 'Delete'}
+          </button>
           {onEdit && (
             <button
               type="button"
@@ -124,6 +159,11 @@ export function StrategyDetailDrawer({ open, strategy, onClose, onEdit }) {
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 space-y-6">
+          {deleteError && (
+            <p role="alert" className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+              {deleteError}
+            </p>
+          )}
           {error && (
             <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
               {error}
@@ -192,9 +232,18 @@ export function StrategyDetailDrawer({ open, strategy, onClose, onEdit }) {
                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Trades using this strategy
                 </h3>
+                {!loading && !error && trades.length > 0 && (
+                  <p className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                    This strategy has {trades.length} linked {trades.length === 1 ? 'trade' : 'trades'}. Delete is disabled to protect your trade history.
+                  </p>
+                )}
                 {loading ? (
                   <p className="rounded-xl border border-dashed border-pit-border py-8 text-center text-sm text-slate-500">
                     Loading trades…
+                  </p>
+                ) : error ? (
+                  <p className="rounded-xl border border-dashed border-rose-500/30 py-8 text-center text-sm text-rose-300">
+                    Trades could not be verified. Deletion is disabled until they can be loaded.
                   </p>
                 ) : trades.length === 0 ? (
                   <p className="rounded-xl border border-dashed border-pit-border py-8 text-center text-sm text-slate-500">
