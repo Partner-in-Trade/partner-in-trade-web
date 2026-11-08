@@ -104,9 +104,9 @@ export function PricingOnboardingView() {
         checkoutLoading={checkoutLoading}
       />
       <ComparePlansSection compareRef={compareRef} />
-      {checkoutSyncPending && (
+      {(checkoutSyncPending || checkoutMessage) && (
         <p className="text-center text-sm text-amber-300 px-4" role="status">
-          Checkout completed. Your subscription is still being activated; please refresh in a moment.
+          {checkoutMessage || 'Payment confirmation is still pending with the payment provider. Your plan will unlock only after the backend verifies it.'}
         </p>
       )}
       {error && (
