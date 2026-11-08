@@ -1,109 +1,140 @@
 # Partner in Trade — Frontend
 
-Trading journal web app built with **React**, **Vite**, and **Tailwind CSS**. Track trades, review P&L, and explore playbook analytics. Data is stored in the browser (`localStorage`) by default; API hooks are in place for a future backend.
+The React web application for **Partner in Trade**, a trading journal and performance workspace. The frontend provides authentication, subscription onboarding, trade journaling, analytics, market and strategy views, and plan-based feature visibility.
 
-## Features
+## Product areas
 
-- **Dashboard** — KPIs, equity curve, daily P&L, recent trades
-- **P&L calendar** — Trades and day-level P&L on a month grid
-- **Trade log** — Searchable table with detail view and delete
-- **Playbooks & edge** — Setup-level performance breakdown
-- **Add trade drawer** — Right-side form with market type, USD/INR currency, long/short, prices, risk (R), and review fields (screenshots placeholder)
+- **Authentication** — Sign in and account registration; API requests use the stored bearer token.
+- **Subscription onboarding** — Free-trial activation, BASIC/PRO plan selection, Razorpay checkout, and subscription status synchronization with the backend.
+- **Dashboard** — Trading overview and key performance information.
+- **Trade journal** — Trade log, trade entry and detail flows, journal views, and P&L calendar.
+- **Analytics** — Performance and trade analytics.
+- **Markets and strategies** — Market selection and strategy views.
+- **News calendar** — Calendar view for market-related news.
+
+Feature visibility is controlled by centralized plan capabilities (FREE, TRIAL, BASIC, and PRO). Frontend gating is for presentation; backend authorization remains authoritative. A client-side payment callback does not itself grant paid access—the verified subscription state is loaded from the backend.
 
 ## Tech stack
 
-| Layer | Choice |
-|--------|--------|
+| Area | Technology |
+| --- | --- |
 | UI | React 18 |
-| Build | Vite 5 |
+| Build and dev server | Vite 5 |
 | Styling | Tailwind CSS 3 |
+| State management | Redux Toolkit and React Redux |
+| HTTP client | Axios |
 | Charts | Recharts |
 | Icons | Lucide React |
+| Tests | Vitest, Testing Library, and MSW |
 
-Path alias: `@/` → `src/` (see `vite.config.js`).
+The `@/` import alias resolves to `src/` (configured in `vite.config.js`).
 
-## Getting started
+## Requirements
 
-### Prerequisites
+- Node.js (18 or newer recommended)
+- npm
 
-- **Node.js** 18+ recommended
-- **npm** (on Arch/Garuda: `sudo pacman -S npm` if `npm` is missing)
+## Local setup
 
-### Install and run
+From the frontend repository root:
 
 ```bash
-cd pit_web_react
 npm install
+```
+
+Create a local `.env` file if you need to override the API configuration:
+
+```bash
+cp .env.example .env
+```
+
+Start the Vite development server:
+
+```bash
 npm run dev
 ```
 
-Dev server: [http://localhost:3000](http://localhost:3000)
+The app is served at [http://localhost:3000](http://localhost:3000).
 
-If `npm run dev` fails, start Vite directly:
+### Backend connection
 
-```bash
-./node_modules/.bin/vite
+The frontend expects the Partner in Trade backend API. By default, the API client uses:
+
+```
+http://localhost:8080/api/v1
 ```
 
-### Other scripts
+The Vite development server also proxies requests beginning with `/api` to `http://localhost:8080`.
 
-```bash
-npm run build    # production build → dist/
-npm run preview  # serve dist locally
-npm run test:run # Vitest (single run, CI-friendly)
-```
+Start the backend separately before testing authenticated or API-backed flows. Configure the frontend API URL in `.env` when your backend runs at a different address.
 
-### Tests (no npm required)
+## Environment variables
 
-From this directory (`partner_in_trade_web` — do not `cd partner_in_trade_web` again if you are already here):
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | API base URL, including the `/api/v1` prefix | `http://localhost:8080/api/v1` |
+| `VITE_API_TIMEOUT_MS` | Axios request timeout in milliseconds | `90000` |
 
-```bash
-node --run test:run
-```
+See [`.env.example`](./.env.example) for the checked-in example configuration. Do not commit secrets or personal credentials to `.env`.
 
-Or invoke Vitest directly:
+## Available commands
 
-```bash
-node ./node_modules/vitest/vitest.mjs run
-# ./node_modules/.bin/vitest run
-```
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite development server |
+| `npm run build` | Create the production build in `dist/` |
+| `npm run preview` | Preview the production build locally |
+| `npm test` | Start Vitest |
+| `npm run test:run` | Run the test suite once (CI-friendly) |
 
-If you install npm (`sudo pacman -S npm`), `npm run test:run` works the same way.
-
-## Project structure
+## Project layout
 
 ```
 src/
 ├── app/
-│   ├── App.jsx
-│   └── providers/TradeContext.jsx   # trades state + localStorage
-├── components/layout/               # Sidebar, TopHeader
-├── components/ui/                   # KpiCard, OutcomeBadge, Toast
-├── data/mockTrades.js               # sample trades, playbooks, currencies
+│   ├── App.jsx                 # App shell and route-like tab rendering
+│   ├── AppEffects.jsx          # Authentication and data bootstrap effects
+│   └── store/                  # Redux store, slices, and selectors
+├── components/
+│   ├── layout/                 # Sidebar and top header
+│   └── ui/                     # Shared UI components
 ├── features/
 │   ├── analytics/
+│   ├── auth/
 │   ├── calendar/
 │   ├── dashboard/
-│   └── trades/                      # log, entry drawer, calculations, API
-├── lib/apiClient.js
+│   ├── journal/
+│   ├── markets/
+│   ├── news/
+│   ├── strategies/
+│   ├── subscription/           # Plans, onboarding, checkout, API integration
+│   └── trades/                 # Trade log, entry/detail UI, and trade flows
+├── lib/                        # API client and data mappers
+├── test/                       # Shared test setup and mocks
+├── constants/
 ├── index.css
-└── main.jsx
+└── main.jsx                    # React entry point and Redux Provider
 ```
 
-## Data & environment
+## Authentication and API behavior
 
-Trades and account data come from the **Partner In Trade** backend API after login. Auth token is stored in `localStorage` (`pit_jwt`).
+- The Axios client attaches the JWT from browser storage as a `Bearer` token.
+- A non-development `401 Unauthorized` response triggers the registered session logout handler.
+- Authenticated workspace, trade, analytics, and subscription data are loaded through the backend API.
+- Subscription context is loaded before the main workspace is shown. If loading fails, the UI offers a retry state.
+- Razorpay checkout completion is synchronized against backend subscription status; the frontend does not treat checkout dismissal, failure, or an unverified callback as proof of paid access.
 
-1. Start the backend (`partner-in-trade-backend`: `./run-local.sh` on port **8080**).
-2. Copy `.env.example` → `.env` in this folder (optional; default is `http://localhost:8080/api/v1`).
-3. Run `npm run dev` (port **3000**). Vite proxies `/api` to the backend in dev.
+For API contract and integration details, see the backend project and the integration documentation in the parent repository (if available).
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_BASE_URL` | API base including `/api/v1` |
+## Testing and production build
 
-Integration details: **[../docs/integration/INTEGRATION_PLAN.md](../docs/integration/INTEGRATION_PLAN.md)**.
+Run the automated tests and production build before submitting frontend changes:
 
-## License
+```bash
+npm run test:run
+npm run build
+```
 
-Private project (`package.json` → `"private": true`).
+## Repository visibility
+
+This is a private project. Do not publish credentials, production tokens, customer data, or environment files.
