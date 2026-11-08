@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import App, { MainContent } from './App';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { mockUser, mockEconomicEvents, mockSubscriptionMe } from '@/test/fixtures';
@@ -9,6 +9,31 @@ describe('App', () => {
   it('shows AuthView when not authenticated', () => {
     renderWithProviders(<App />);
     expect(screen.getByText('Sign In to Dashboard')).toBeInTheDocument();
+  });
+
+
+  it('shows a recoverable error and retries subscription bootstrap', async () => {
+    const { store } = renderWithProviders(<App />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        subscription: {
+          me: null,
+          plans: [],
+          status: 'error',
+          trialLoading: false,
+          checkoutLoading: false,
+          error: { code: 'NETWORK', message: 'Subscription service unavailable' },
+        },
+      },
+    });
+
+    expect(screen.getByText("We couldn't load your account")).toBeInTheDocument();
+    expect(screen.getByText('Subscription service unavailable')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => {
+      expect(store.getState().subscription.status).toBe('ready');
+    });
   });
 
   it('shows pricing onboarding when authenticated on FREE plan', () => {
