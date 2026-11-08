@@ -232,6 +232,11 @@ export function StrategyDetailDrawer({ open, strategy, onClose, onEdit }) {
                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Trades using this strategy
                 </h3>
+                {!loading && !error && trades.length > 0 && (
+                  <p className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                    This strategy has {trades.length} linked {trades.length === 1 ? 'trade' : 'trades'}. Delete is disabled to protect your trade history.
+                  </p>
+                )}
                 {loading ? (
                   <p className="rounded-xl border border-dashed border-pit-border py-8 text-center text-sm text-slate-500">
                     Loading trades…
