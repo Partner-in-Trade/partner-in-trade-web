@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { server, API_BASE } from '@/test/msw/server';
+import { server } from '@/test/msw/server';
+import { API_BASE } from '@/test/msw/handlers';
 import { createTestStore } from '@/test/renderWithProviders';
 import {
   fetchTrades,
