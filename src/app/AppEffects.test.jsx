@@ -15,7 +15,7 @@ describe('AppEffects', () => {
   });
 
   const subscriptionReady = {
-    me: mockSubscriptionMe({ planCode: 'TRIAL', onboardingCompleted: true }),
+    me: mockSubscriptionMe({ planCode: 'TRIAL', effectivePlanCode: 'TRIAL', onboardingCompleted: true }),
     plans: [],
     status: 'ready',
     trialLoading: false,
