@@ -182,6 +182,16 @@ const workspaceSlice = createSlice({
         state.strategies.push(strategy);
       }
     },
+    removeStrategyFromWorkspace(state, action) {
+      const strategyId = Number(action.payload);
+      const deleted = state.strategies.find((strategy) => Number(strategy.id) === strategyId);
+      state.strategies = state.strategies.filter(
+        (strategy) => Number(strategy.id) !== strategyId
+      );
+      if (deleted?.name && Number(state.strategiesByName[deleted.name]) === strategyId) {
+        delete state.strategiesByName[deleted.name];
+      }
+    },
     setStrategiesSearch(state, action) {
       state.strategiesSearch = action.payload;
     },
@@ -296,6 +306,7 @@ export const {
   setSelectedMarketId,
   resetWorkspace,
   registerStrategyInWorkspace,
+  removeStrategyFromWorkspace,
   setStrategiesSearch,
 } = workspaceSlice.actions;
 export default workspaceSlice.reducer;
