@@ -6,7 +6,8 @@ import { TradeLogView } from './TradeLogView';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { apiTradeToUi } from '@/lib/mappers/tradeMapper';
 import { mockApiTrade } from '@/test/fixtures';
-import { server, API_BASE } from '@/test/msw/server';
+import { server } from '@/test/msw/server';
+import { API_BASE } from '@/test/msw/handlers';
 
 describe('TradeLogView', () => {
   const uiTrade = apiTradeToUi(mockApiTrade);
