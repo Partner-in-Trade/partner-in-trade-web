@@ -4,18 +4,14 @@ const JWT_STORAGE_KEY = 'pit_jwt';
 
 const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 90_000;
 const LOCAL_API_BASE_URL = 'http://localhost:8080/api/v1';
-const PRODUCTION_API_BASE_URL = import.meta.env.VITE_API_BASE_URL_PROD;
+const PRODUCTION_API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL_PROD ||
+  'https://partner-in-trade.onrender.com/api/v1';
 
 // Vite sets PROD at build time, so production builds cannot accidentally use localhost.
 const API_BASE_URL = import.meta.env.PROD
   ? PRODUCTION_API_BASE_URL
   : LOCAL_API_BASE_URL;
-
-if (import.meta.env.PROD && !PRODUCTION_API_BASE_URL) {
-  throw new Error(
-    'Missing VITE_API_BASE_URL_PROD. Set it to the production backend URL (including /api/v1) before building.'
-  );
-}
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
