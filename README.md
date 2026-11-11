@@ -58,22 +58,21 @@ The app is served at [http://localhost:3000](http://localhost:3000).
 
 ### Backend connection
 
-The frontend expects the Partner in Trade backend API. By default, the API client uses:
+The frontend selects its API base URL from the Vite build environment:
 
-```
-http://localhost:8080/api/v1
-```
+- **Development / staging (`npm run dev`):** always uses `http://localhost:8080/api/v1`.
+- **Production build (`npm run build`):** uses `VITE_API_BASE_URL_PROD`, set to the deployed backend URL including `/api/v1`.
 
-The Vite development server also proxies requests beginning with `/api` to `http://localhost:8080`.
+The Vite development server also proxies requests beginning with `/api` to `http://localhost:8080`. This proxy is only used by the development server.
 
-Start the backend separately before testing authenticated or API-backed flows. Configure the frontend API URL in `.env` when your backend runs at a different address.
+Set `VITE_API_BASE_URL_PROD` in the environment that runs the production build (for example, your frontend hosting provider's build environment). If it is missing, a production build fails fast rather than silently sending API requests to localhost. Restart the dev server after changing environment variables.
 
 ## Environment variables
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | API base URL, including the `/api/v1` prefix | `http://localhost:8080/api/v1` |
-| `VITE_API_TIMEOUT_MS` | Axios request timeout in milliseconds | `90000` |
+| `VITE_API_BASE_URL_PROD` | Production backend API base URL, including the `/api/v1` prefix. Required for production builds. | `https://partner-in-trade.onrender.com/api/v1` |
+| `VITE_API_TIMEOUT_MS` | API request timeout in milliseconds | `90000` |
 
 See [`.env.example`](./.env.example) for the checked-in example configuration. Do not commit secrets or personal credentials to `.env`.
 
