@@ -65,7 +65,7 @@ The frontend selects its API base URL from the Vite build environment:
 
 The Vite development server also proxies requests beginning with `/api` to `http://localhost:8080`. This proxy is only used by the development server.
 
-Set `VITE_API_BASE_URL_PROD` in the environment that runs the production build (for example, your frontend hosting provider's build environment). If it is missing, a production build fails fast rather than silently sending API requests to localhost. Restart the dev server after changing environment variables.
+Set `VITE_API_BASE_URL_PROD` in the environment that runs the production build (for example, your frontend hosting provider's build environment). If it is missing, the client defaults to `https://partner-in-trade.onrender.com/api/v1`. You can override this with `VITE_API_BASE_URL_PROD`. Restart the dev server after changing environment variables.
 
 ## Environment variables
 
