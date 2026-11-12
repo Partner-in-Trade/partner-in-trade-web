@@ -156,6 +156,14 @@ export function TradeEntryModal() {
     const entryPrice = Number(form.entryPrice);
     const stop = form.stopLoss === '' ? null : Number(form.stopLoss);
     const target = form.takeProfit === '' ? null : Number(form.takeProfit);
+    if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
+      setToast('Entry price must be greater than zero.');
+      return;
+    }
+    if (hasExit && (!Number.isFinite(Number(form.exitPrice)) || Number(form.exitPrice) <= 0)) {
+      setToast('Exit price must be greater than zero.');
+      return;
+    }
     if (!Number.isFinite(entryAt.getTime()) || entryAt > new Date()) {
       setToast('Entry date and time cannot be in the future.');
       return;
@@ -184,10 +192,37 @@ export function TradeEntryModal() {
     }
   };
 
-  // Trade performance metrics are calculated and returned by the backend, never locally.
-  const netPnlDisplay = 'Calculated after save';
-  const riskDisplay = 'Calculated by backend';
-  const rDisplay = 'Calculated by backend';
+  // Live estimates mirror the backend trade-result formula: directional price move
+  // multiplied by size and contract multiplier, less round-trip fees.
+  const entryValue = Number(form.entryPrice);
+  const exitValue = form.exitPrice === '' ? null : Number(form.exitPrice);
+  const sizeValue = Number(form.quantity);
+  const multiplierValue = Number(form.contractMultiplier);
+  const feeValue = Number(form.fees || 0);
+  const stopValue = form.stopLoss === '' ? null : Number(form.stopLoss);
+  const hasValidInputs =
+    Number.isFinite(entryValue) && entryValue > 0 &&
+    Number.isFinite(sizeValue) && sizeValue > 0 &&
+    Number.isFinite(multiplierValue) && multiplierValue > 0 &&
+    Number.isFinite(feeValue) && feeValue >= 0;
+  const directionFactor = form.direction === 'LONG' ? 1 : -1;
+  const estimatedPnl = hasValidInputs && exitValue != null && Number.isFinite(exitValue) && exitValue > 0
+    ? (exitValue - entryValue) * directionFactor * sizeValue * multiplierValue - feeValue
+    : null;
+  const estimatedRisk = hasValidInputs && stopValue != null && Number.isFinite(stopValue) &&
+    (form.direction === 'LONG' ? stopValue < entryValue : stopValue > entryValue)
+    ? Math.abs(entryValue - stopValue) * sizeValue * multiplierValue
+    : null;
+  const estimatedR = estimatedPnl != null && estimatedRisk > 0
+    ? estimatedPnl / estimatedRisk
+    : null;
+  const currency = selectedFormMarket?.currency || form.currency || '';
+  const formatMoney = (value) => value == null
+    ? '—'
+    : new Intl.NumberFormat(undefined, { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2 }).format(value);
+  const netPnlDisplay = estimatedPnl == null ? 'Enter an exit price' : formatMoney(estimatedPnl);
+  const riskDisplay = estimatedRisk == null ? 'Set a valid stop' : formatMoney(estimatedRisk);
+  const rDisplay = estimatedR == null ? '—' : `${estimatedR.toFixed(2)}R`;
 
   return (
     <>
