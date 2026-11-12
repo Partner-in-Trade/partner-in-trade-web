@@ -375,6 +375,7 @@ export function TradeEntryModal() {
                         icon={Calendar}
                         type="date"
                         value={form.exitDate}
+                        disabled={!form.entryDate}
                         min={form.entryDate || undefined}
                         onChange={(e) => {
                           const nextExitDate = e.target.value;
