@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TradeEntryModal } from './TradeEntryModal';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -53,6 +53,8 @@ describe('TradeEntryModal', () => {
     const prices = screen.getAllByPlaceholderText('0.00');
     await user.type(prices[0], '100');
     await user.type(prices[1], '110');
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[1], { target: { value: dateInputs[0].value } });
     await user.click(screen.getByRole('button', { name: /Save trade/i }));
     await waitFor(() => {
       expect(store.getState().trades.isAddModalOpen).toBe(false);
@@ -121,6 +123,8 @@ describe('TradeEntryModal', () => {
     const prices = screen.getAllByPlaceholderText('0.00');
     await user.type(prices[0], '100');
     await user.type(prices[1], '110');
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[1], { target: { value: dateInputs[0].value } });
     const quantity = screen.getByPlaceholderText('100');
     await user.clear(quantity);
     await user.type(quantity, '0.25');
