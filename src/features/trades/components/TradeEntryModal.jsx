@@ -34,7 +34,7 @@ function defaultForm(dateOverride, marketId, setup = '') {
     currency: 'USD',
     direction: 'LONG',
     entryDate: day,
-    exitDate: day,
+    exitDate: '',
     entryTime: day === todayIsoDate() ? currentTime : '09:35',
     exitTime: day === todayIsoDate() ? currentTime : '10:05',
     entryPrice: '',
@@ -100,7 +100,7 @@ function enforceOptionalMinOnBlur(value, min) {
 function IconInput({ icon: Icon, className = '', ...inputProps }) {
   return (
     <div className="relative [&_input]:relative">
-      <input {...inputProps} className={`${inputClass()} pr-12 pit-datetime-input ${className}`} />
+      <input {...inputProps} className={`${inputClass()} pr-12 pit-datetime-input ${inputProps.type === 'date' ? (inputProps.value ? 'font-bold text-white' : 'font-normal text-slate-500') : ''} ${className}`} />
       <Icon
         className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-white"
         aria-hidden
@@ -351,7 +351,10 @@ export function TradeEntryModal() {
                         type="date"
                         required
                         value={form.entryDate}
-                        onChange={(e) => set({ entryDate: e.target.value })}
+                        onChange={(e) => set({
+                          entryDate: e.target.value,
+                          ...(form.exitDate && e.target.value && form.exitDate < e.target.value ? { exitDate: '' } : {}),
+                        })}
                       />
                     </div>
                     <div>
@@ -372,7 +375,16 @@ export function TradeEntryModal() {
                         icon={Calendar}
                         type="date"
                         value={form.exitDate}
-                        onChange={(e) => set({ exitDate: e.target.value })}
+                        disabled={!form.entryDate}
+                        min={form.entryDate || undefined}
+                        onChange={(e) => {
+                          const nextExitDate = e.target.value;
+                          if (nextExitDate && form.entryDate && nextExitDate < form.entryDate) {
+                            setToast('Exit date cannot be earlier than entry date.');
+                            return;
+                          }
+                          set({ exitDate: nextExitDate });
+                        }}
                       />
                     </div>
                     <div>
