@@ -26,6 +26,8 @@ function todayIsoDate() {
 
 function defaultForm(dateOverride, marketId, setup = '') {
   const day = dateOverride || todayIsoDate();
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   return {
     marketId: marketId ?? '',
     symbol: '',
@@ -33,7 +35,7 @@ function defaultForm(dateOverride, marketId, setup = '') {
     direction: 'LONG',
     entryDate: day,
     exitDate: day,
-    entryTime: '09:35',
+    entryTime: day === todayIsoDate() ? currentTime : '09:35',
     exitTime: '10:05',
     entryPrice: '',
     exitPrice: '',
