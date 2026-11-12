@@ -59,4 +59,76 @@ describe('TradeEntryModal', () => {
     });
     expect(store.getState().trades.rawTrades.length).toBeGreaterThan(0);
   });
+  it('locks currency to the selected market and updates it when the market changes', async () => {
+    const user = userEvent.setup();
+    const markets = mockMarkets.map((market) => (
+      market.id === 11 ? { ...market, currency: 'INR' } : market
+    ));
+    renderWithProviders(<TradeEntryModal />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        workspace: {
+          markets,
+          selectedMarketId: 10,
+          strategiesByName: { 'Opening Range Breakout (ORB)': 5 },
+          workspaceLoading: false,
+          workspaceError: null,
+        },
+        trades: {
+          rawTrades: [],
+          tradesLoading: false,
+          tradesError: null,
+          isAddModalOpen: true,
+          prefillDate: null,
+          selectedTrade: null,
+        },
+      },
+    });
+
+    expect(screen.getByLabelText('Market currency')).toHaveTextContent('USD');
+    expect(screen.queryByRole('button', { name: 'USD' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'INR' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getAllByRole('combobox')[0], '11');
+    expect(screen.getByLabelText('Market currency')).toHaveTextContent('INR');
+  });
+
+
+  it('submits fractional quantities without rounding them up', async () => {
+    const user = userEvent.setup();
+    const { store } = renderWithProviders(<TradeEntryModal />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        workspace: {
+          markets: mockMarkets,
+          selectedMarketId: 10,
+          strategiesByName: { 'Opening Range Breakout (ORB)': 5 },
+          workspaceLoading: false,
+          workspaceError: null,
+        },
+        trades: {
+          rawTrades: [],
+          tradesLoading: false,
+          tradesError: null,
+          isAddModalOpen: true,
+          prefillDate: null,
+          selectedTrade: null,
+        },
+      },
+    });
+
+    await user.type(screen.getByPlaceholderText('EURUSD'), 'EURUSD');
+    const prices = screen.getAllByPlaceholderText('0.00');
+    await user.type(prices[0], '100');
+    await user.type(prices[1], '110');
+    const quantity = screen.getByPlaceholderText('100');
+    await user.clear(quantity);
+    await user.type(quantity, '0.25');
+    await user.click(screen.getByRole('button', { name: /Save trade/i }));
+
+    await waitFor(() => {
+      expect(store.getState().trades.isAddModalOpen).toBe(false);
+    });
+    expect(store.getState().trades.rawTrades[0].quantity).toBe(0.25);
+  });
 });

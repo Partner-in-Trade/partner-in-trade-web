@@ -14,7 +14,7 @@ import {
 import { assetClassFromMarketType } from '@/constants/markets';
 import { DEFAULT_TIMEFRAME, TIMEFRAMES } from '@/constants/timeframes';
 import { symbolCatalogTypeForMarketType } from '@/data/symbolCatalog';
-import { CURRENCIES, MISTAKE_TAGS } from '@/data/mockTrades';
+import { MISTAKE_TAGS } from '@/data/mockTrades';
 import { Toast } from '@/components/ui/Toast';
 import { SymbolAutocomplete } from './SymbolAutocomplete';
 
@@ -26,6 +26,8 @@ function todayIsoDate() {
 
 function defaultForm(dateOverride, marketId, setup = '') {
   const day = dateOverride || todayIsoDate();
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   return {
     marketId: marketId ?? '',
     symbol: '',
@@ -33,8 +35,8 @@ function defaultForm(dateOverride, marketId, setup = '') {
     direction: 'LONG',
     entryDate: day,
     exitDate: day,
-    entryTime: '09:35',
-    exitTime: '10:05',
+    entryTime: day === todayIsoDate() ? currentTime : '09:35',
+    exitTime: day === todayIsoDate() ? currentTime : '10:05',
     entryPrice: '',
     exitPrice: '',
     quantity: '1',
@@ -75,7 +77,7 @@ function handleMinNumberChange(value, min, setValue) {
 }
 
 function enforceMinOnBlur(value, min) {
-  if (value === '' || Number.isNaN(Number(value))) return String(min);
+  if (value === '' || !Number.isFinite(Number(value))) return String(min);
   return String(Math.max(min, Number(value)));
 }
 
@@ -129,7 +131,7 @@ export function TradeEntryModal() {
       const defaultSetup = prefillSetup || strategyNames[0] || '';
       setForm({
         ...defaultForm(prefillDate || todayIsoDate(), initialMarketId, defaultSetup),
-        ...(market?.currency ? { currency: market.currency } : {}),
+        currency: market?.currency || '',
       });
     }
   }, [isAddModalOpen, prefillDate, prefillSetup, selectedMarketId, markets, strategyNames]);
@@ -146,6 +148,42 @@ export function TradeEntryModal() {
 
   const submit = async (e) => {
     e.preventDefault();
+    const entryAt = new Date(form.entryDate + 'T' + form.entryTime);
+    const hasExit = form.exitPrice !== '' && form.exitPrice != null;
+    const exitAt = form.exitDate && form.exitTime
+      ? new Date(form.exitDate + 'T' + form.exitTime)
+      : null;
+    const entryPrice = Number(form.entryPrice);
+    const stop = form.stopLoss === '' ? null : Number(form.stopLoss);
+    const target = form.takeProfit === '' ? null : Number(form.takeProfit);
+    if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
+      setToast('Entry price must be greater than zero.');
+      return;
+    }
+    if (hasExit && (!Number.isFinite(Number(form.exitPrice)) || Number(form.exitPrice) <= 0)) {
+      setToast('Exit price must be greater than zero.');
+      return;
+    }
+    if (!Number.isFinite(entryAt.getTime()) || entryAt > new Date()) {
+      setToast('Entry date and time cannot be in the future.');
+      return;
+    }
+    if (hasExit && (!exitAt || !Number.isFinite(exitAt.getTime()) || exitAt < entryAt)) {
+      setToast('Exit date and time must be valid and not earlier than entry.');
+      return;
+    }
+    if (stop != null && (form.direction === 'LONG' ? stop >= entryPrice : stop <= entryPrice)) {
+      setToast('Stop loss must be ' + (form.direction === 'LONG' ? 'below' : 'above') + ' entry price.');
+      return;
+    }
+    if (target != null && (form.direction === 'LONG' ? target <= entryPrice : target >= entryPrice)) {
+      setToast('Take profit must be ' + (form.direction === 'LONG' ? 'above' : 'below') + ' entry price.');
+      return;
+    }
+    if (!(Number(form.quantity) > 0)) {
+      setToast('Quantity must be greater than zero.');
+      return;
+    }
     try {
       await dispatch(addTrade(formToTradePayload(form, markets))).unwrap();
       dispatch(setIsAddModalOpen(false));
@@ -154,10 +192,37 @@ export function TradeEntryModal() {
     }
   };
 
-  // Trade performance metrics are calculated and returned by the backend, never locally.
-  const netPnlDisplay = 'Calculated after save';
-  const riskDisplay = 'Calculated by backend';
-  const rDisplay = 'Calculated by backend';
+  // Live estimates mirror the backend trade-result formula: directional price move
+  // multiplied by size and contract multiplier, less round-trip fees.
+  const entryValue = Number(form.entryPrice);
+  const exitValue = form.exitPrice === '' ? null : Number(form.exitPrice);
+  const sizeValue = Number(form.quantity);
+  const multiplierValue = Number(form.contractMultiplier);
+  const feeValue = Number(form.fees || 0);
+  const stopValue = form.stopLoss === '' ? null : Number(form.stopLoss);
+  const hasValidInputs =
+    Number.isFinite(entryValue) && entryValue > 0 &&
+    Number.isFinite(sizeValue) && sizeValue > 0 &&
+    Number.isFinite(multiplierValue) && multiplierValue > 0 &&
+    Number.isFinite(feeValue) && feeValue >= 0;
+  const directionFactor = form.direction === 'LONG' ? 1 : -1;
+  const estimatedPnl = hasValidInputs && exitValue != null && Number.isFinite(exitValue) && exitValue > 0
+    ? (exitValue - entryValue) * directionFactor * sizeValue * multiplierValue - feeValue
+    : null;
+  const estimatedRisk = hasValidInputs && stopValue != null && Number.isFinite(stopValue) &&
+    (form.direction === 'LONG' ? stopValue < entryValue : stopValue > entryValue)
+    ? Math.abs(entryValue - stopValue) * sizeValue * multiplierValue
+    : null;
+  const estimatedR = estimatedPnl != null && estimatedRisk > 0
+    ? estimatedPnl / estimatedRisk
+    : null;
+  const currency = selectedFormMarket?.currency || form.currency || '';
+  const formatMoney = (value) => value == null
+    ? '—'
+    : new Intl.NumberFormat(undefined, { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2 }).format(value);
+  const netPnlDisplay = estimatedPnl == null ? 'Enter an exit price' : formatMoney(estimatedPnl);
+  const riskDisplay = estimatedRisk == null ? 'Set a valid stop' : formatMoney(estimatedRisk);
+  const rDisplay = estimatedR == null ? '—' : `${estimatedR.toFixed(2)}R`;
 
   return (
     <>
@@ -211,7 +276,7 @@ export function TradeEntryModal() {
                         );
                         set({
                           marketId: id,
-                          ...(market?.currency ? { currency: market.currency } : {}),
+                          currency: market?.currency || '',
                           ...(nextType !== prevType ? { symbol: '' } : {}),
                         });
                       }}
@@ -327,25 +392,15 @@ export function TradeEntryModal() {
                 <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Currency
                 </h3>
-                <div className="grid grid-cols-2 gap-1 rounded-lg border border-pit-border bg-pit-card p-1">
-                  {CURRENCIES.map((code) => {
-                    const active = form.currency === code;
-                    return (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={() => set({ currency: code })}
-                        className={`rounded-md py-2 text-sm font-semibold transition ${
-                          active
-                            ? 'bg-pit-bg text-white shadow-sm ring-1 ring-indigo-500/40'
-                            : 'text-slate-500 hover:bg-slate-800/50 hover:text-slate-300'
-                        }`}
-                      >
-                        {code}
-                      </button>
-                    );
-                  })}
-                </div>
+                <output
+                  aria-label="Market currency"
+                  className={`${inputClass()} block cursor-not-allowed bg-pit-card font-semibold text-white`}
+                >
+                  {selectedFormMarket?.currency || form.currency || '—'}
+                </output>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Currency is fixed by the selected market.
+                </p>
               </section>
 
               <section>
@@ -386,12 +441,9 @@ export function TradeEntryModal() {
                       type="number"
                       step="any"
                       required
-                      min={1}
+                      min="0.000001"
                       value={form.quantity}
-                      onChange={(e) =>
-                        handleMinNumberChange(e.target.value, 1, (v) => set({ quantity: v }))
-                      }
-                      onBlur={(e) => set({ quantity: enforceMinOnBlur(e.target.value, 1) })}
+                      onChange={(e) => set({ quantity: e.target.value })}
                       placeholder="100"
                       className={`${inputClass()} font-mono`}
                     />
@@ -592,9 +644,9 @@ function formToTradePayload(form, markets) {
     symbol: form.symbol.toUpperCase().trim(),
     marketId: form.marketId,
     assetClass: assetClassFromMarketType(market?.type),
-    currency: form.currency,
+    currency: market?.currency || form.currency,
     direction: form.direction,
-    quantity: Math.max(1, Number(form.quantity) || 1),
+    quantity: Number(form.quantity),
     contractMultiplier: Math.max(0.000001, Number(form.contractMultiplier) || 1),
     entryPrice: Number(form.entryPrice),
     exitPrice: form.exitPrice === '' ? '' : Number(form.exitPrice),
