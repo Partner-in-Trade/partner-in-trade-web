@@ -14,7 +14,7 @@ import {
 import { assetClassFromMarketType } from '@/constants/markets';
 import { DEFAULT_TIMEFRAME, TIMEFRAMES } from '@/constants/timeframes';
 import { symbolCatalogTypeForMarketType } from '@/data/symbolCatalog';
-import { CURRENCIES, MISTAKE_TAGS } from '@/data/mockTrades';
+import { MISTAKE_TAGS } from '@/data/mockTrades';
 import { Toast } from '@/components/ui/Toast';
 import { SymbolAutocomplete } from './SymbolAutocomplete';
 
@@ -131,7 +131,7 @@ export function TradeEntryModal() {
       const defaultSetup = prefillSetup || strategyNames[0] || '';
       setForm({
         ...defaultForm(prefillDate || todayIsoDate(), initialMarketId, defaultSetup),
-        ...(market?.currency ? { currency: market.currency } : {}),
+        currency: market?.currency || '',
       });
     }
   }, [isAddModalOpen, prefillDate, prefillSetup, selectedMarketId, markets, strategyNames]);
@@ -241,7 +241,7 @@ export function TradeEntryModal() {
                         );
                         set({
                           marketId: id,
-                          ...(market?.currency ? { currency: market.currency } : {}),
+                          currency: market?.currency || '',
                           ...(nextType !== prevType ? { symbol: '' } : {}),
                         });
                       }}
@@ -357,25 +357,15 @@ export function TradeEntryModal() {
                 <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Currency
                 </h3>
-                <div className="grid grid-cols-2 gap-1 rounded-lg border border-pit-border bg-pit-card p-1">
-                  {CURRENCIES.map((code) => {
-                    const active = form.currency === code;
-                    return (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={() => set({ currency: code })}
-                        className={`rounded-md py-2 text-sm font-semibold transition ${
-                          active
-                            ? 'bg-pit-bg text-white shadow-sm ring-1 ring-indigo-500/40'
-                            : 'text-slate-500 hover:bg-slate-800/50 hover:text-slate-300'
-                        }`}
-                      >
-                        {code}
-                      </button>
-                    );
-                  })}
-                </div>
+                <output
+                  aria-label="Market currency"
+                  className={`${inputClass()} block cursor-not-allowed bg-pit-card font-semibold text-white`}
+                >
+                  {selectedFormMarket?.currency || form.currency || '—'}
+                </output>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Currency is fixed by the selected market.
+                </p>
               </section>
 
               <section>
@@ -619,7 +609,7 @@ function formToTradePayload(form, markets) {
     symbol: form.symbol.toUpperCase().trim(),
     marketId: form.marketId,
     assetClass: assetClassFromMarketType(market?.type),
-    currency: form.currency,
+    currency: market?.currency || form.currency,
     direction: form.direction,
     quantity: Number(form.quantity),
     contractMultiplier: Math.max(0.000001, Number(form.contractMultiplier) || 1),
