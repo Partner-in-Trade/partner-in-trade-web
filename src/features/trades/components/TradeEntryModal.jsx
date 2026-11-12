@@ -36,7 +36,7 @@ function defaultForm(dateOverride, marketId, setup = '') {
     entryDate: day,
     exitDate: day,
     entryTime: day === todayIsoDate() ? currentTime : '09:35',
-    exitTime: '10:05',
+    exitTime: day === todayIsoDate() ? currentTime : '10:05',
     entryPrice: '',
     exitPrice: '',
     quantity: '1',
