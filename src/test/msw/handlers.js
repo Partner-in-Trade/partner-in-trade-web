@@ -101,7 +101,7 @@ export const handlers = [
 
   http.post(`${API_BASE}/trades/add`, async ({ request }) => {
     const body = await request.json();
-    return HttpResponse.json({ ...mockApiTrade, id: 101, symbol: body.symbol });
+    return HttpResponse.json({ ...mockApiTrade, ...body, id: 101 });
   }),
 
   http.delete(`${API_BASE}/trades/:tradeId`, () => HttpResponse.json({ success: true })),
