@@ -59,4 +59,38 @@ describe('TradeEntryModal', () => {
     });
     expect(store.getState().trades.rawTrades.length).toBeGreaterThan(0);
   });
+  it('locks currency to the selected market and updates it when the market changes', async () => {
+    const user = userEvent.setup();
+    const markets = mockMarkets.map((market) => (
+      market.id === 11 ? { ...market, currency: 'INR' } : market
+    ));
+    renderWithProviders(<TradeEntryModal />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        workspace: {
+          markets,
+          selectedMarketId: 10,
+          strategiesByName: { 'Opening Range Breakout (ORB)': 5 },
+          workspaceLoading: false,
+          workspaceError: null,
+        },
+        trades: {
+          rawTrades: [],
+          tradesLoading: false,
+          tradesError: null,
+          isAddModalOpen: true,
+          prefillDate: null,
+          selectedTrade: null,
+        },
+      },
+    });
+
+    expect(screen.getByLabelText('Market currency')).toHaveTextContent('USD');
+    expect(screen.queryByRole('button', { name: 'USD' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'INR' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getAllByRole('combobox')[0], '11');
+    expect(screen.getByLabelText('Market currency')).toHaveTextContent('INR');
+  });
+
 });
