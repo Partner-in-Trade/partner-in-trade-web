@@ -75,7 +75,7 @@ function handleMinNumberChange(value, min, setValue) {
 }
 
 function enforceMinOnBlur(value, min) {
-  if (value === '' || Number.isNaN(Number(value))) return String(min);
+  if (value === '' || !Number.isFinite(Number(value))) return String(min);
   return String(Math.max(min, Number(value)));
 }
 
@@ -146,6 +146,34 @@ export function TradeEntryModal() {
 
   const submit = async (e) => {
     e.preventDefault();
+    const entryAt = new Date(form.entryDate + 'T' + form.entryTime);
+    const hasExit = form.exitPrice !== '' && form.exitPrice != null;
+    const exitAt = form.exitDate && form.exitTime
+      ? new Date(form.exitDate + 'T' + form.exitTime)
+      : null;
+    const entryPrice = Number(form.entryPrice);
+    const stop = form.stopLoss === '' ? null : Number(form.stopLoss);
+    const target = form.takeProfit === '' ? null : Number(form.takeProfit);
+    if (!Number.isFinite(entryAt.getTime()) || entryAt > new Date()) {
+      setToast('Entry date and time cannot be in the future.');
+      return;
+    }
+    if (hasExit && (!exitAt || !Number.isFinite(exitAt.getTime()) || exitAt < entryAt)) {
+      setToast('Exit date and time must be valid and not earlier than entry.');
+      return;
+    }
+    if (stop != null && (form.direction === 'LONG' ? stop >= entryPrice : stop <= entryPrice)) {
+      setToast('Stop loss must be ' + (form.direction === 'LONG' ? 'below' : 'above') + ' entry price.');
+      return;
+    }
+    if (target != null && (form.direction === 'LONG' ? target <= entryPrice : target >= entryPrice)) {
+      setToast('Take profit must be ' + (form.direction === 'LONG' ? 'above' : 'below') + ' entry price.');
+      return;
+    }
+    if (!(Number(form.quantity) > 0)) {
+      setToast('Quantity must be greater than zero.');
+      return;
+    }
     try {
       await dispatch(addTrade(formToTradePayload(form, markets))).unwrap();
       dispatch(setIsAddModalOpen(false));
@@ -386,12 +414,9 @@ export function TradeEntryModal() {
                       type="number"
                       step="any"
                       required
-                      min={1}
+                      min="0.000001"
                       value={form.quantity}
-                      onChange={(e) =>
-                        handleMinNumberChange(e.target.value, 1, (v) => set({ quantity: v }))
-                      }
-                      onBlur={(e) => set({ quantity: enforceMinOnBlur(e.target.value, 1) })}
+                      onChange={(e) => set({ quantity: e.target.value })}
                       placeholder="100"
                       className={`${inputClass()} font-mono`}
                     />
@@ -594,7 +619,7 @@ function formToTradePayload(form, markets) {
     assetClass: assetClassFromMarketType(market?.type),
     currency: form.currency,
     direction: form.direction,
-    quantity: Math.max(1, Number(form.quantity) || 1),
+    quantity: Number(form.quantity),
     contractMultiplier: Math.max(0.000001, Number(form.contractMultiplier) || 1),
     entryPrice: Number(form.entryPrice),
     exitPrice: form.exitPrice === '' ? '' : Number(form.exitPrice),
