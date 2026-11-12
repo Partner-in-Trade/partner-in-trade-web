@@ -93,4 +93,42 @@ describe('TradeEntryModal', () => {
     expect(screen.getByLabelText('Market currency')).toHaveTextContent('INR');
   });
 
+
+  it('submits fractional quantities without rounding them up', async () => {
+    const user = userEvent.setup();
+    const { store } = renderWithProviders(<TradeEntryModal />, {
+      preloadedState: {
+        auth: { user: mockUser, authError: null, authLoading: false },
+        workspace: {
+          markets: mockMarkets,
+          selectedMarketId: 10,
+          strategiesByName: { 'Opening Range Breakout (ORB)': 5 },
+          workspaceLoading: false,
+          workspaceError: null,
+        },
+        trades: {
+          rawTrades: [],
+          tradesLoading: false,
+          tradesError: null,
+          isAddModalOpen: true,
+          prefillDate: null,
+          selectedTrade: null,
+        },
+      },
+    });
+
+    await user.type(screen.getByPlaceholderText('EURUSD'), 'EURUSD');
+    const prices = screen.getAllByPlaceholderText('0.00');
+    await user.type(prices[0], '100');
+    await user.type(prices[1], '110');
+    const quantity = screen.getByPlaceholderText('100');
+    await user.clear(quantity);
+    await user.type(quantity, '0.25');
+    await user.click(screen.getByRole('button', { name: /Save trade/i }));
+
+    await waitFor(() => {
+      expect(store.getState().trades.isAddModalOpen).toBe(false);
+    });
+    expect(store.getState().trades.rawTrades[0].quantity).toBe(0.25);
+  });
 });
