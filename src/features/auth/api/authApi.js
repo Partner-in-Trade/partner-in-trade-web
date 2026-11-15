@@ -5,4 +5,5 @@ export const authApi = {
   register: ({ name, email, password }) =>
     apiClient.post('/users/create', { name, email, password }),
   updateProfile: (profile) => apiClient.put('/users/me/profile', profile),
+  getCurrentProfile: () => apiClient.get('/users/me'),
 };
