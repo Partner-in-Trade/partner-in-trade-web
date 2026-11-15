@@ -77,6 +77,8 @@ const authSlice = createSlice({
     },
     setUser(state, action) {
       state.user = action.payload;
+      const token = localStorage.getItem('pit_jwt');
+      if (token) persistAuthSession(action.payload, token);
     },
     loginWithGoogle(state) {
       if (!isDev) return;
