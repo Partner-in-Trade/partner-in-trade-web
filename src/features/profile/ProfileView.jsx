@@ -64,6 +64,7 @@ export function ProfileView({ mode = 'profile' }) {
     timeZone: user?.timezone || user?.timeZone || 'Asia/Kolkata',
   }), [user, currency]);
   const [form, setForm] = useState(initialForm);
+  useEffect(() => { setForm(initialForm); }, [initialForm]);
   const change = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
   const save = async (event) => {
     event.preventDefault();
