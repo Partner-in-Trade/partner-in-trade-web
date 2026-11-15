@@ -75,6 +75,9 @@ const authSlice = createSlice({
     clearAuthError(state) {
       state.authError = null;
     },
+    setUser(state, action) {
+      state.user = action.payload;
+    },
     loginWithGoogle(state) {
       if (!isDev) return;
       const mockUser = {
@@ -134,7 +137,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearAuthError, loginWithGoogle, bypassAuth } = authSlice.actions;
+export const { logout, clearAuthError, setUser, loginWithGoogle, bypassAuth } = authSlice.actions;
 export default authSlice.reducer;
 
 export const selectIsDevBypassEnabled = () => isDev;
