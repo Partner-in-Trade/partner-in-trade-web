@@ -80,6 +80,7 @@ test('opens settings and saves profile changes', async ({ page }) => {
   await signIn(page);
   await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByRole('heading', { name: 'Account settings' })).toBeVisible();
+  await expect(page.getByLabel('Username')).toHaveValue('testtrader');
   await page.getByLabel('Full name').fill('Updated Trader');
 
   const updateRequest = page.waitForRequest((request) =>
@@ -101,6 +102,7 @@ test('shows backend validation feedback in the browser', async ({ page }) => {
   await mockBackend(page, { rejectProfileUpdate: true });
   await signIn(page);
   await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByLabel('Username')).toHaveValue('testtrader');
   await page.getByLabel('Full name').fill('Updated Trader');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('alert')).toContainText('Username is already taken');
