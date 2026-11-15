@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectUser, selectAnalytics, selectRawTrades, selectMarkets, selectSelectedMarketId, setUser } from '@/app/store';
 import { authApi } from '@/features/auth/api/authApi';
@@ -16,6 +16,22 @@ function Metric({ label, value, note }) {
 export function ProfileView({ mode = 'profile' }) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
+  useEffect(() => {
+    authApi.getCurrentProfile().then((response) => {
+      const data = response.data?.data || response.data?.user || response.data;
+      if (!data || !data.id) return;
+      dispatch(setUser({
+        ...user,
+        ...data,
+        id: String(data.id),
+        fullName: data.name ?? user?.fullName,
+        markets: data.tradingMarkets ?? user?.markets,
+        baseCurrency: data.accountCurrency ?? user?.baseCurrency,
+        timezone: data.timeZone ?? user?.timezone,
+        usualSession: [data.usualSessionStart, data.usualSessionEnd].filter(Boolean).join(' to '),
+      }));
+    }).catch(() => {});
+  }, [dispatch]);
   const analytics = useSelector(selectAnalytics);
   const trades = useSelector(selectRawTrades);
   const markets = useSelector(selectMarkets);
