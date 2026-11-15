@@ -27,7 +27,6 @@ export function ProfileView({ mode = 'profile' }) {
     return <section className="mx-auto max-w-4xl space-y-6">
       <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-400">Account</p><h1 className="mt-2 text-2xl font-semibold text-white">Account settings</h1><p className="mt-1 text-sm text-slate-400">Manage your account information and preferences.</p></div>
       <div className="rounded-xl border border-pit-border bg-pit-card p-5"><h2 className="font-semibold text-white">Personal information</h2><p className="mt-1 text-sm text-slate-400">Your account details are currently managed by your sign-in profile.</p><dl className="mt-5 grid gap-4 sm:grid-cols-2"><div><dt className="text-xs text-slate-500">Name</dt><dd className="mt-1 text-sm text-slate-200">{name}</dd></div><div><dt className="text-xs text-slate-500">Email</dt><dd className="mt-1 text-sm text-slate-200">{user?.email || '—'}</dd></div></dl></div>
-      <div className="rounded-xl border border-pit-border bg-pit-card p-5"><h2 className="font-semibold text-white">Application appearance</h2><p className="mt-1 text-sm text-slate-400">The current application theme remains unchanged.</p></div>
     </section>;
   }
 
