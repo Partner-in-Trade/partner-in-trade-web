@@ -70,7 +70,9 @@ export function ProfileView({ mode = 'profile' }) {
     event.preventDefault();
     setSaving(true); setError(''); setSuccess('');
     try {
-      const payload = { ...form, tradingMarkets: form.tradingMarkets, riskPerTrade: form.riskPerTrade === '' ? null : Number(form.riskPerTrade) };
+      const payload = Object.fromEntries(Object.entries(form).map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value]));
+      payload.username = payload.username.replace(/^@+/, '');
+      payload.riskPerTrade = payload.riskPerTrade === '' ? null : Number(payload.riskPerTrade);
       const response = await authApi.updateProfile(payload);
       const data = response.data?.data || response.data?.user || response.data;
       const nextUser = {
@@ -119,7 +121,7 @@ export function ProfileView({ mode = 'profile' }) {
 }
 
 function ProfileEditor({ form, change, save, saving, error, success, onCancel }) {
-  const input = (key, label, placeholder = '') => <label className="block"><span className={labelClass}>{label}</span><input className={fieldClass} value={form[key] ?? ''} onChange={change(key)} placeholder={placeholder}/></label>;
+  const input = (key, label, placeholder = '') => <label className="block"><span className={labelClass}>{label}</span><input type={key === 'email' ? 'email' : key === 'riskPerTrade' ? 'number' : 'text'} min={key === 'riskPerTrade' ? '0' : undefined} step={key === 'riskPerTrade' ? 'any' : undefined} required={key === 'name' || key === 'email'} className={fieldClass} value={form[key] ?? ''} onChange={change(key)} placeholder={placeholder}/></label>;
   const select = (key, label, options) => <label className="block"><span className={labelClass}>{label}</span><select className={fieldClass} value={form[key] ?? ''} onChange={change(key)}><option value="">Select…</option>{options.map((option)=><option key={option} value={option}>{option}</option>)}</select></label>;
   return <form onSubmit={save} className="rounded-2xl border border-pit-border bg-pit-card p-5 sm:p-6">
     <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold text-white">Edit profile</h2><p className="mt-1 text-xs text-slate-400">Changes are saved to your account.</p></div>{onCancel && <button type="button" onClick={onCancel} className="rounded-lg p-2 text-slate-400 hover:bg-pit-bg"><X className="h-4 w-4"/></button>}</div>
